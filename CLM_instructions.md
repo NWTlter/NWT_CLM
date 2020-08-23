@@ -488,11 +488,7 @@ echo "hist_fincl1  ='TOTECOSYSC', 'TOTECOSYSN', 'TOTSOMC', 'TOTSOMN', 'TOTVEGC',
 ```
 | <span> |
 | :--- |
-<<<<<<< HEAD
 | **STOP:** If you would like to save time by cloning your case to create other vegetation community simulations, this is the best point to do so. See: [Cloning your case](Cloning your case) for details. |
-=======
-| <p style="font-size:20px"> **STOP:** If you would like to save time by cloning your case to create other vegetation community simulations, this is the best point to do so. See: [Cloning your case][Cloning your case] for details. </p> |
->>>>>>> a5bf47147abe27352e35d8974c61724ffa339aa1
 | <span> |
 
 
