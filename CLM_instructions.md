@@ -486,11 +486,11 @@ echo "hist_empty_htapes= .true." >> user_nl_clm
 # What history variables should be recorded from simulation
 echo "hist_fincl1  ='TOTECOSYSC', 'TOTECOSYSN', 'TOTSOMC', 'TOTSOMN', 'TOTVEGC', 'TOTVEGN', 'TLAI', 'GPP', 'CPOOL', 'NPP', 'TWS', 'H2OSNO'" >> user_nl_clm
 ```
-| <span> |
-| :--- |
-| **STOP:** If you would like to save time by cloning your case to create other vegetation community simulations, this is the best point to do so. See: [Cloning your case](Cloning your case) for details. |
-| <span> |
 
+## **STOP:** Clone Case Option 
+If you would like to save time by cloning your case to create other vegetation community simulations, this is the best point to do so.
+
+See: [Cloning your case](#cloning-your-case) for details. 
 
 ## 7) Run the case in Advanced Decomposition mode
 Because you have set `CLM_ACCELERATED_SPINUP` to `on`, the run will be in advanced decomposition mode. 
