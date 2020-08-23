@@ -626,5 +626,5 @@ If you are cloning the case to alter vegetation community settings make sure you
 
  - [ ] user_datm streams must point to the correct forcing data
  - [ ] surface dataset files must be correct for the vegetation community
- - [d] copy the parameter file into the new case directory
+ - [ ] copy the parameter file into the new case directory
 
