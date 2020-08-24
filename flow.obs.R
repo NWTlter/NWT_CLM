@@ -289,7 +289,7 @@ saddle_prod_data_fp <- download_EDI(edi_id = saddle_productivity_data,
 
 # Download saddle sensor network veg community
 message(paste0("Downloading Saddle Productivity data, please cite: \n",
-               "CITATION NEEDED (Accessed ",Sys.Date(), ")"))
+               "Elwood, K., W. Reed, and Niwot Ridge LTER. 2020. Plot vegetation surveys at the Sensor Network, 2017 to ongoing ver 2. Environmental Data Initiative. https://doi.org/10.6073/pasta/1b5e99d522f986c2244bf5a25e69d3f5 (Accessed ",Sys.Date(), ")"))
 saddle_sensntwk_veg_data_fp <- download_EDI(edi_id = saddle_sensntwk_veg, 
                                     dest_dir = paste0(DirDnld, 
                                                       "/saddle_sensntwk_veg_data"),

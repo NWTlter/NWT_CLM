@@ -62,7 +62,7 @@ getNewData = TRUE
 # to create an account, visit the Ameriflux website: https://ameriflux.lbl.gov/
 # Please also read their data-use policy, by downloading their data you are agreeing 
 # to follow it. The policy can be found here: https://ameriflux.lbl.gov/data/data-policy/
-amf_usr <- "hehollan"
+amf_usr <- "your_username" # CHANGE ME
 
 #### Tower Use Options ####
 # What tvan tower should be used?
@@ -77,7 +77,6 @@ basetower <- "East" # West
 #### Tvan data location ####
 # Only necessary to set the location of the tower that you are processing, or 
 # both, if tower = "Both"
-# The location of the east tvan data filepath, use "", if tower = "West"
 # The data should be formatted with ReddyProc file format.
 # Briefly the file should be formated as follows: the file should be 
 # tab-delimited with the first row specifying the name of the variable 
@@ -102,7 +101,7 @@ basetower <- "East" # West
 # | Year        | Year                             | -              | No        |
 # | DoY         | The day of year (1-365/366)      | -              | No        |
 # | Hour        | Decimal hour of the day (0.5-24) | -              | No        |
-
+# The location of the east tvan data filepath, use "", if tower = "West"
 east_data_fp <- "~/Downloads/Tvan_out_new/processed_data/supp_filtering/tvan_East_2007-05-10_00-30-00_to_2020-08-11_flux_P_reddyproc_suppproc.txt"
 # The location of the east tvan data filepath, use "", if tower = "East"
 west_data_fp <- "~/Downloads/Tvan_out_new/processed_data/supp_filtering/tvan_West_2007-05-10_00-30-00_to_2020-08-11_flux_P_reddyproc_suppproc.txt"
@@ -126,7 +125,7 @@ simulated_runoff_fp <- NA # if NA, no simulated runoff will be used
 DirOut <- paste0(DirOutBase, "/", "data")
 plots_dir <- paste0(DirOutBase, "/plots")
 
-#Check if directory exists and create if not
+# Check if directory exists and create if not
 if (!dir.exists(DirOut)) dir.create(DirOut, recursive = TRUE)
 if (!dir.exists(DirDnld)) dir.create(DirDnld, recursive = TRUE)
 if (!dir.exists(plots_dir)) dir.create(plots_dir, recursive = TRUE)
@@ -134,7 +133,6 @@ if (!dir.exists(plots_dir)) dir.create(plots_dir, recursive = TRUE)
 
 # the EDI id for precip data from the saddle and C1 weather stations
 saddle_precip_data <- "416" # NWT LTER EDI id
-C1_precip_data <- "414" # NWT LTER EDI id
 
 # Lat/long coords - shouldn't need to change unless modified in surface
 # dataset lat/long
@@ -442,7 +440,7 @@ read_USCRN_precip_data <- function(USCRN_precip_fp) {
 }
 
 # Function for downloading radiation data from Ameriflux
-download_rad <- function(dest_dir, username, 
+download_amflx <- function(dest_dir, username, 
                          site = "US-NR1", DescriptionOfDataUse,
                          DoNotOverwrite = TRUE,
                          verbose = FALSE) {
@@ -841,7 +839,7 @@ hlf_hr_precip <- data.frame(PRECTmms = PRECTmms, # mm/s
 # Download Radiation data
 ##############################################################################
 writeLines("Downloading Ameriflux radiation data...")
-rad_data_fp <- download_rad(dest_dir = paste0(DirDnld, "/rad_data"),
+rad_data_fp <- download_amflx(dest_dir = paste0(DirDnld, "/rad_data"),
                             username = "hehollan", verbose = TRUE)
 
 # Check if the files have already been unzipped, if not, unzip the zip file
