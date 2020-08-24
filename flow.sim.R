@@ -26,6 +26,7 @@ lapply(packReq, function(x) {
 # Base directory for output
 DirOutBase <- paste0("~/Downloads/SIM/data/")
 
+#### Input options ####
 # The input directory where simulation data is located
 DirIn <- "~/Downloads/"
 
@@ -33,7 +34,7 @@ DirIn <- "~/Downloads/"
 ncdf_fp <- "2000datm_CLM50bgc_nwt_DM.clm2.h0.2008-01-01-00000.nc"
 ncdf_fp <- "test.nc"
 
-# Vegetation Community
+#### Vegetation Community ####
 # Which vegetation community is this simulation for?
 veg_com <- "DM" # Options: "FF", "DM", "WM", "MM", "SB", NA
 

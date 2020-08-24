@@ -43,11 +43,10 @@ ver <- paste0("v",format(Sys.time(), "%Y%m%dT%H%m"))
 DirOutBase <- paste0("~/Downloads/OBS/data",ver)
 
 #### Download and input options ####
-# Directory to download precipitation and radidation data to
+# Directory to download observation data to 
 DirDnld = "~/Downloads/lter_obs"
 
-# Should a newer version of precip data be automatically 
-# downloaded if one is available?
+# Should a newer version of EDI data be downloaded if one is available?
 getNewData = TRUE
 
 #### Tvan data location ####
