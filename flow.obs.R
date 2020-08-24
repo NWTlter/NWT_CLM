@@ -43,11 +43,10 @@ ver <- paste0("v",format(Sys.time(), "%Y%m%dT%H%m"))
 DirOutBase <- paste0("~/Downloads/OBS/data",ver)
 
 #### Download and input options ####
-# Directory to download precipitation and radidation data to
+# Directory to download observation data to 
 DirDnld = "~/Downloads/lter_obs"
 
-# Should a newer version of precip data be automatically 
-# downloaded if one is available?
+# Should a newer version of EDI data be downloaded if one is available?
 getNewData = TRUE
 
 #### Tvan data location ####
@@ -289,7 +288,7 @@ saddle_prod_data_fp <- download_EDI(edi_id = saddle_productivity_data,
 
 # Download saddle sensor network veg community
 message(paste0("Downloading Saddle Productivity data, please cite: \n",
-               "CITATION NEEDED (Accessed ",Sys.Date(), ")"))
+               "Elwood, K., W. Reed, and Niwot Ridge LTER. 2020. Plot vegetation surveys at the Sensor Network, 2017 to ongoing ver 2. Environmental Data Initiative. https://doi.org/10.6073/pasta/1b5e99d522f986c2244bf5a25e69d3f5 (Accessed ",Sys.Date(), ")"))
 saddle_sensntwk_veg_data_fp <- download_EDI(edi_id = saddle_sensntwk_veg, 
                                     dest_dir = paste0(DirDnld, 
                                                       "/saddle_sensntwk_veg_data"),

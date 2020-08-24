@@ -43,9 +43,11 @@ options(stringsAsFactors = F)
 makeplots <- TRUE
 
 #### Output Options ####
-DirOutBase <- paste0("~/Desktop/Working_files/Niwot/Tvan_out_new/")
+# The output directory for the script. It is recommended but not required that this
+# be the same directory that holds the Reddyproc-ready files produced by 
+# tvan_L1_preprocess.R
+DirOutBase <- "~/Downloads/Tvan_out/Reddy_proc_readyData"
 
-#### Input options ####
 #### Tower Use Options ####
 # What tvan tower should be used?
 tower <- "Both" # Options are "East", "West", or "Both"
@@ -69,7 +71,7 @@ plots_dir <- paste0(DirOut, "/plots")
 
 #Check if directory exists and create if not
 if(!dir.exists(DirOut)) dir.create(DirOut, recursive = TRUE)
-if(!dir.exists(plots_dir)) dir.create(plots_dir, recursive = TRUE)
+if(!dir.exists(plots_dir) & makeplots) dir.create(plots_dir, recursive = TRUE)
 
 # the EDI id for hourly meterological data from the saddle weather stations
 saddle_met_data <- "57" # NWT LTER EDI id
@@ -725,7 +727,7 @@ if (makeplots) {
 ##############################################################################
 # Download saddle grid snow_depth_data
 message(paste0("Downloading Saddle Met data, please cite: \n",
-               "CITATION (Accessed ",Sys.Date(), ")"))
+               "CITATION NEEDED (Accessed ",Sys.Date(), ")"))
 saddle_met_data_fp <- download_EDI(edi_id = saddle_met_data, 
                                    dest_dir = paste0(DirOut, 
                                                      "/saddle_met_data"),
