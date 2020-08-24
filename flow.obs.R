@@ -37,10 +37,8 @@ options(stringsAsFactors = F)
 #Workflow parameters
 ##############################################################################
 #### Output Options ####
-# The version data for the FP standard conversion processing
-ver <- paste0("v",format(Sys.time(), "%Y%m%dT%H%m"))
 # Base directory for output
-DirOutBase <- paste0("~/Downloads/OBS/data",ver)
+DirOutBase <- paste0("~/Downloads/OBS/data")
 
 #### Download and input options ####
 # Directory to download observation data to 
@@ -454,6 +452,8 @@ sad_sens_10min <- sad_sens_data_all %>%
 writeLines(paste0("Collapsing 10-minute soil sensor data into 30-minute chunks, \n", 
            "this may take a while..."))
 
+# NOTE: this could probably be made more efficient if handled one file at a time. And then
+# joining the 30-minute data together after each is combined
 sad_sens_soilmoist_temp <- sad_sens_10min %>%
   # Get half-hourly averages
   group_by(date, decimalTime) %>%
@@ -521,7 +521,9 @@ sad_sensnet_soil <- sad_sens_soilmoist_temp %>%
   mutate(data_set = "Saddle_sensor_network_EDI_210_5cm_30cm_moisttemp_probes",
          plot = as.character(plot),
          upper_sensor_depth_cm = 5,
-         lower_sensor_depth_cm = 30)
+         lower_sensor_depth_cm = 30) %>%
+  mutate(soilmoisture_upper_avg = soilmoisture_upper_avg * 100,
+         soilmoisture_lower_avg = soilmoisture_lower_avg * 100)
 
 
 # Plotting soil moisture
@@ -674,79 +676,6 @@ soilmoist_temp_comb_daily <- soilmoist_temp_comb %>%
   unique()
 
 
-# 
-# 
-# p <- ggplot(soilmoist_temp_comb_hrly %>%
-#               select(Hour, veg_com, 
-#                      all_of(c("soiltemp_upper_avg_mean",
-#                               "soiltemp_lower_avg_mean",
-#                               "soilmoisture_upper_avg_mean",
-#                               "soilmoisture_lower_avg_mean")),
-#                      all_of(c("soiltemp_upper_avg_sd",
-#                               "soiltemp_lower_avg_sd",
-#                               "soilmoisture_upper_avg_sd",
-#                               "soilmoisture_lower_avg_sd"))) %>%
-#               pivot_longer(all_of(c("soiltemp_upper_avg_mean",
-#                                "soiltemp_lower_avg_mean",
-#                                "soilmoisture_upper_avg_mean",
-#                                "soilmoisture_lower_avg_mean")),
-#                            names_to = "SoilMetricMean", values_to = "MeanValue") %>%
-#            pivot_longer(all_of(c("soiltemp_upper_avg_sd",
-#                                  "soiltemp_lower_avg_sd",
-#                                  "soilmoisture_upper_avg_sd",
-#                                  "soilmoisture_lower_avg_sd")),
-#                         names_to = "SoilMetricSD", values_to = "SDValue") %>%
-#          mutate(SoilMetricMean = gsub("_mean", "", SoilMetricMean),
-#                 SoilMetricSD = gsub("_sd", "", SoilMetricSD)) %>% 
-#          filter(SoilMetricMean == SoilMetricSD) %>% 
-#          filter(!is.na(MeanValue)) %>%
-#          filter(!is.na(SDValue)), 
-#        aes(x = Hour)) +
-#   #geom_point(aes(color = veg_com), alpha = 0.3) +
-#   geom_ribbon(aes(ymin = MeanValue-SDValue, ymax = MeanValue + SDValue,
-#                   fill = veg_com), alpha = 0.4) +
-#   geom_line(aes(y = MeanValue, color = veg_com)) +
-#   facet_wrap(SoilMetricMean~veg_com, scales = "free_y")
-# 
-# p
-# 
-# 
-# soilmoist_temp_comb_daily %>% 
-#   select(DoY, month, veg_com, 
-#          all_of(c("soiltemp_upper_avg_mean",
-#                   "soiltemp_lower_avg_mean",
-#                   "soilmoisture_upper_avg_mean",
-#                   "soilmoisture_lower_avg_mean")),
-#          all_of(c("soiltemp_upper_avg_sd",
-#                   "soiltemp_lower_avg_sd",
-#                   "soilmoisture_upper_avg_sd",
-#                   "soilmoisture_lower_avg_sd"))) %>%
-#   pivot_longer(all_of(c("soiltemp_upper_avg_mean",
-#                         "soiltemp_lower_avg_mean",
-#                         "soilmoisture_upper_avg_mean",
-#                         "soilmoisture_lower_avg_mean")),
-#                names_to = "SoilMetricMean", values_to = "MeanValue") %>%
-#   pivot_longer(all_of(c("soiltemp_upper_avg_sd",
-#                         "soiltemp_lower_avg_sd",
-#                         "soilmoisture_upper_avg_sd",
-#                         "soilmoisture_lower_avg_sd")),
-#                names_to = "SoilMetricSD", values_to = "SDValue") %>%
-#   mutate(SoilMetricMean = gsub("_mean", "", SoilMetricMean),
-#          SoilMetricSD = gsub("_sd", "", SoilMetricSD)) %>% 
-#   filter(SoilMetricMean == SoilMetricSD) %>% 
-#   filter(!is.na(MeanValue)) %>%
-#   filter(!is.na(SDValue)) %>% 
-#   mutate(date = days(DoY) + ymd("2000-01-01")) %>%
-#   ggplot(aes(x = date)) +
-#   geom_ribbon(aes(ymin = MeanValue-SDValue, ymax = MeanValue + SDValue,
-#                   fill = veg_com), alpha = 0.4) +
-#   geom_line(aes(y = MeanValue, color = veg_com)) +
-#   facet_wrap(SoilMetricMean~veg_com, scales = "free_y") +
-#   scale_x_date(date_labels = "%b", date_breaks = "1 month")
-#   
-  
-
-
 ################################################################################
 # Load in data from Saddle Grid (snow depth and productivity)
 ################################################################################
@@ -793,7 +722,8 @@ sad_snw_mod <- sad_snw %>%
 sad_snw_daily <- sad_snw_mod %>%
   select(DoY, snow_depth_dailyavg, snow_depth_dailysd,
          veg_com, data_information) %>%
-  unique()
+  unique() %>%
+  rename(snow_depth_data_information = data_information)
 
 # Average the snow depth across plots of the same vegetation community, at 
 # each date
@@ -806,6 +736,7 @@ sad_snw_forc_yrs <- sad_snw_mod %>%
   select(date, DoY, Year, avg_date_depth, sd_date_depth, veg_com,
          data_information) %>%
   unique()
+
 
 
 # plot the measurements and doy averages for each community
@@ -856,10 +787,15 @@ sad_prod_mod <- sad_prod %>%
   # average subsamples
   mutate(NPP = rowMeans(select(., starts_with("subsample_")),
                     na.rm = TRUE))
+sad_prod_mod_ann <- sad_prod_mod %>%
+  group_by(year, veg_com) %>%
+  mutate(mean_NPP = mean(NPP, na.rm = TRUE),
+         sd_NPP = sd(NPP, na.rm = TRUE))
+  
 
 
 # sad_prod_mod %>%
-#   ggplot(aes(x = veg_class, y = NPP)) +
+#   ggplot(aes(x = veg_com, y = NPP)) +
 #   geom_boxplot(fill = NA) +
 #   geom_point(position = position_jitter(width = rel(0.3)))
 
@@ -882,19 +818,7 @@ sad_prod_mod <- sad_prod %>%
 ################################################################################
 # Reformat data
 ################################################################################
-# Final list of variables (monthly mean and SD):
-# FSH - H tvan; hourly averages/sd by month group
-# RN - Tvan Rn; hourly averages/sd by month group
-# LH - LE from flux data; hourly averages/sd by month group
-# GPP - GPP (from flux data); hourly averages/sd by month group
-# Tvan: Soil temp and moisture GPP; daily mean across all years
-# FGR - "G data" ground flux heat flux into soil/snow
-# Tair - air temp
-# SOILLIQ - Soil moisture
-# ANPP/BNPP - productivity above and belowground - mayonly be estimates yearly
-# Saddle grid ANPP
-# Root biomass
-# Snow_depth- 
+# Reformatting several data frames to better match with simulation data
 
 # Data frame 1: 
 # Rename flux variables to match tvan
@@ -914,14 +838,14 @@ tvan_comb_mod.diurnal_seasonal <- tvan_comb_mod.diurnal_seasonal %>%
 # Daily averages for each vegetation community
 # Variables: GPP (tvan), SoilTemp (tvan/sensor network),
 # Soil Moisture (tvan/sensor network), snow depth (saddle grid), 
-daily_soilmoisttemp_gpp <- soilmoist_temp_comb_daily %>% 
+daily_soilmoisttemp_gpp_snwdp <- soilmoist_temp_comb_daily %>% 
   rename(soilmoisture_data_info = data_information) %>%
+  # join with tvan GPP data
   left_join(tvan_comb_mod.daily, by = c("DoY", "veg_com")) %>%
+  # join with snow depth data
+  left_join(sad_snw_daily, by = c("DoY", "veg_com")) %>%
   mutate(ObsSim = "Obs")
-
-# Data frame 3: 
-# Yearly data for each vegetation community
-# productivity
+  
 
 
 
@@ -933,17 +857,50 @@ daily_soilmoisttemp_gpp <- soilmoist_temp_comb_daily %>%
 ################################################################################
 # For each time-series of data, write out units and data
 # Write out halfhourly fluxes:
+writeLines("Writing out diurnal, daily, and annual data.")
 
+# Diurnal-seasonal data
 write.table(tvan_comb_mod.diurnal_seasonal, 
             file = paste0(DirOutBase, "/Diurnal_seasonal_summaries_", "tvan_flux.txt"),
             row.names = FALSE, sep = "\t")
 
 
-# DoY data
-DirOutBase <- "~/Downloads/OBS/datav20200820T2108" 
-write.table(daily_soilmoisttemp_gpp, 
-            file = paste0(DirOutBase, "/Daily_soilmoisture_soiltemp_gpp_summaries.txt"),
+# DoY data 
+write.table(daily_soilmoisttemp_gpp_snwdp, 
+            file = paste0(DirOutBase, 
+                          "/Daily_soilmoisture_soiltemp_gpp_snwdpth_summaries.txt"),
             row.names = FALSE, sep = "\t")
 
 
 # Annual data
+write.table(sad_prod_mod_ann, 
+            file = paste0(DirOutBase, 
+                          "/annual_saddle_grid_NPP_summaries.txt"),
+            row.names = FALSE, sep = "\t")
+
+# Unsummarized data
+writeLines("Writing out data that has not been summarized by time.")
+
+# Saddle sensor network soil data
+write.table(sad_sensnet_soil, 
+            file = paste0(DirOutBase, 
+                          "/sensor_network_soil_data_30_min.txt"),
+            row.names = FALSE, sep = "\t")
+
+# Tvan soil data
+write.table(tvan_soil_mod,
+            file = paste0(DirOutBase, 
+                          "/tvan_soil_data_30_min.txt"),
+            row.names = FALSE, sep = "\t")
+
+# Snow depth data
+write.table(sad_snw_forc_yrs,
+            file = paste0(DirOutBase, 
+                          "/saddle_grid_snow_depth_data_biweekly.txt"),
+            row.names = FALSE, sep = "\t")
+
+# Productivity
+write.table(sad_prod_mod,
+            file = paste0(DirOutBase, 
+                          "/saddle_grid_productivity_data.txt"),
+            row.names = FALSE, sep = "\t")

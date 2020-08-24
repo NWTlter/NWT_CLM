@@ -724,7 +724,7 @@ if (makeplots) {
 ##############################################################################
 # Download saddle grid snow_depth_data
 message(paste0("Downloading Saddle Met data, please cite: \n",
-               "CITATION NEEDED (Accessed ",Sys.Date(), ")"))
+               "Morse, J. and M. Losleben. 2019. Climate data for saddle data loggers (CR23X and CR1000), 2009 - ongoing, hourly. ver 3. Environmental Data Initiative. https://doi.org/10.6073/pasta/4f416341d978376c0205c86bc88d90ba (Accessed ",Sys.Date(), ")"))
 saddle_met_data_fp <- download_EDI(edi_id = saddle_met_data, 
                                    dest_dir = paste0(DirOut, 
                                                      "/saddle_met_data"),
