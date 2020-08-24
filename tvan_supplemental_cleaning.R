@@ -7,18 +7,21 @@
 # @description 
 # Supplemental cleaning of tvan data in preparation for the tvan workflow that goes beyond
 # the cleaning done in tvan_L1_preprocess.R script
+# Notably, this script adds Saddle air temperature to Tvan Tair results when the sensors 
+# seemed to go bad (2016-2018)
 
 # changelog and author contributions / copyrights
 # Hannah Holland-Moritz (2020-06-09)
 #   Writing the initial script
+# Will Wieder (2020-08-24)
+#   Minor changes and suggestions 
 ##############################################################################
 
 ##############################################################################
 # Dependencies
 ##############################################################################
 
-#Call the R HDF5 Library
-packReq <- c("dplyr", "ggplot2", "tidyr", "lubridate", "EML")
+packReq <- c("dplyr", "ggplot2", "tidyr", "lubridate", "EML", "xts")
 
 #Install and load all required packages
 lapply(packReq, function(x) {
@@ -28,9 +31,6 @@ lapply(packReq, function(x) {
     library(x, character.only = TRUE)
   }})
 
-#Install packages from github repos
-# devtools::install_github(c("NEONScience/eddy4R/pack/eddy4R.base", "NEONScience/NEON-utilities/neonUtilities"))
-# 
 #Setup Environment
 options(stringsAsFactors = F)
 
@@ -40,10 +40,10 @@ options(stringsAsFactors = F)
 ##############################################################################
 #### Ploting options ####
 # Should plots be made?
-makeplots <- FALSE# TRUE
+makeplots <- TRUE
 
 #### Output Options ####
-DirOutBase <- paste0("~/Downloads/Tvan_out_new/processed_data")
+DirOutBase <- paste0("~/Desktop/Working_files/Niwot/Tvan_out_new/")
 
 #### Input options ####
 #### Tower Use Options ####
@@ -55,9 +55,9 @@ tower <- "Both" # Options are "East", "West", or "Both"
 # Only necessary to set the tower that you are processing, or 
 # both, if tower = "Both"
 # The location of the east tvan data filepath, use "", if tower = "West"
-east_data_fp <- "~/Downloads/Tvan_out_new/processed_data/tvan_East_2007-08-29_09-00-00_to_2020-04-09_18-00-00_flux_P_reddyproc.txt"
-# The location of the east tvan data filepath, use "", if tower = "East"
-west_data_fp <- "~/Downloads/Tvan_out_new/processed_data/tvan_West_2007-05-09_19-00-00_to_2020-08-11_00-30-00_flux_P_reddyproc.txt"
+east_data_fp <- "~/Desktop/Working_files/Niwot/Tvan_out_new/processed_data/tvan_East_2007-08-29_09-00-00_to_2020-04-09_18-00-00_flux_P_reddyproc.txt"
+# The location of the west tvan data filepath, use "", if tower = "East"
+west_data_fp <- "~/Desktop/Working_files/Niwot/Tvan_out_new/processed_data/tvan_West_2007-05-09_19-00-00_to_2020-08-11_00-30-00_flux_P_reddyproc.txt"
 
 ##############################################################################
 # Static workflow parameters - these are unlikely to change
@@ -133,7 +133,7 @@ filtering_function <- function(data, variable, start_date, end_date,
   
 }
 
-plot_comparison_by_years <- function(year, data, outdir, var, plot_filetype) {
+plot_comparison_by_years <- function(year, data, outdir, var, plot_filetype='.pdf') {
   # Variable definitions
   # year ---------- The year of data to plot
   # data ---------- the dataframe containing the variable in both filtered and 
@@ -141,7 +141,7 @@ plot_comparison_by_years <- function(year, data, outdir, var, plot_filetype) {
   #                 which state the variable is in.
   # outdir -------- the location that the plots should be saved to
   # var ----------- the variable (character string format) being plotted
-  # plot_filetype - the filtype (pdf or png) that should be saved
+  # plot_filetype - the filtype (pdf or png) that should be saved, default to pdf
   
   library(dplyr)
   library(ggplot2)
@@ -369,6 +369,7 @@ if (tower == "East" | tower == "Both") {
   colnames(tvan_east) <- names(tvan_east_names)
   tvan_units <- tvan_east_names
 }
+
 if (tower == "West" | tower == "Both") {
   # West data
   tvan_west <- read.csv(file = west_data_fp, sep = "\t",
@@ -503,6 +504,7 @@ if (tower == "Both") {
 # Save a version of the unfiltered data
 tvan_tms.unfilt <- tvan_tms
 tvan_tms.unfilt$Filtered <- "unfiltered"
+
 ##############################################################################
 # Filter problem spots
 ##############################################################################
@@ -624,6 +626,7 @@ if (tower == "East" | tower == "Both") {
 if (tower == "West" | tower == "Both") {
   tvan_west_tms$rH <- tvan_west_tms$rH*100
 }
+
 ##############################################################################
 # Prepare data for plotting
 ##############################################################################
@@ -711,7 +714,7 @@ if (makeplots) {
       lapply(year_list, plot_comparison_by_years,
              data = tvan_tms.plot,
              outdir = yr_plots_dir,
-             var = y_name, plot_filetype = ".png")
+             var = y_name)
     }
     
   }
@@ -761,8 +764,10 @@ met.df <- as.data.frame(met.xts) %>%
   mutate_all(as.character) %>%
   mutate(timestamp = as.POSIXct(timestamp, format = "%Y-%m-%d %H:%M:%OS", tz = "MST"),
          airtemp_avg = as.numeric(airtemp_avg))
+
 if (makeplots) {
   # Combine with Tvan for comparison plot
+  # here the .pdf is GIANT, stick with .png
   sadd_met_compare.plot <- tvan_tms %>% 
     left_join(met.df, by = c("timestamp")) %>%
     select(timestamp, Year, DoY, Hour, Tair, airtemp_avg) %>%
@@ -775,8 +780,8 @@ if (makeplots) {
                                 aes(x = timestamp, y = AirTemperature)) +
     geom_point(aes(color = TemperatureSource), alpha = 0.03)
   
-  ggsave(sadd_tvan_temp_comp, filename = paste0(DirOut, "/sadd_tvan_temp_comp.png"),
-         device = "png", width = 10, height =  5, dpi = 150)
+  ggsave(sadd_tvan_temp_comp, filename = paste0(DirOut, "/plots/sadd_tvan_temp_comp.png"),
+         device = 'png', width = 10, height =  5, dpi = 150)
 }
 
 cortest.comp <- tvan_tms %>% 
@@ -831,13 +836,14 @@ if (exists("tvan_twr_east")) {
   tvan_twr_east_units <- rbind(tvan_east_names, tvan_twr_east)
   
   # Write out tvan and met data
+  # used `cleaned` to help clarify what was done to the reddyproc results
   writeLines(paste0("Saving ReddyProc-ready files to ",
                     paste0(DirOut, "/", 
-                           "tvan_", "East","_", period, "_flux_P_reddyproc_suppproc.txt")))
+                           "tvan_", "East","_", period, "_flux_P_reddyproc_cleaned.txt")))
   
   write.table(tvan_twr_east_units, 
               file = paste0(DirOut, "/", 
-                            "tvan_", "East","_", period, "_flux_P_reddyproc_suppproc.txt"),
+                            "tvan_", "East","_", period, "_flux_P_reddyproc_cleaned.txt"),
               row.names = FALSE, sep = "\t")
 }
 
@@ -853,10 +859,12 @@ if (exists("tvan_twr_west")) {
   # Write out tvan and met data
   writeLines(paste0("Saving ReddyProc-ready files to ",
                     paste0(DirOut, "/", 
-                           "tvan_", "West","_", period, "_flux_P_reddyproc_suppproc.txt")))
+                           "tvan_", "West","_", period, "_flux_P_reddyproc_cleaned.txt")))
   
   write.table(tvan_twr_west_units, 
               file = paste0(DirOut, "/", 
-                            "tvan_", "West","_", period, "_flux_P_reddyproc_suppproc.txt"),
+                            "tvan_", "West","_", period, "_flux_P_reddyproc_cleaned.txt"),
               row.names = FALSE, sep = "\t")
 }
+
+print('Finished cleaning Tvan Data, now create .nc files using flow.lter.clm.R')
