@@ -8,7 +8,7 @@ This repoistory contains scripts that are necessary for running and analyzing da
 3. [Run the model](#run-the-model) at Niwot Ridge by following the instructions in `CLM_instructions.md` 
 4. [Download and format observations](#download-and-format-observations) for comparison with the model using `flow.obs.R`
 5. [Format model output](#format-model-output) for comparisons with observations using `flow.sim.R` 
-6. [create comparison plots](#comparing-model-and-obs) between simulation and observations with `Obs_sim_com_plots.R`
+6. [Create comparison plots](#comparing-model-and-obs) between simulation and observations with `Obs_sim_com_plots.R`
 
 *This script will be rendered obsolete once the Tvan data is available on AmeriFlux 
 
@@ -61,6 +61,8 @@ File structure:
     └── saddle_met_data
 
 ```
+[top](#nwt_clm)
+
 
 # Generate atmospheric forcings for CLM
 ### 2. `flow.lter.clm.R`
@@ -155,11 +157,20 @@ Options currently under development:
         └── yearly_gap_plots_2020.png
 
 ```
+[top](#nwt_clm)
+
 
 # Run the model
 ### 3. `CLM_instructions`
 Now it's time to run CLM... see 
-After running the model we'll compare with observations
+After running the model we'll compare with observations. First:
+
+- The plotting scripts expect 30 minute output from the model
+- Multiple years can be contatinated together
+- The large dataset can be moved to your local machine for analyses
+
+[top](#nwt_clm)
+
 
 # Download and format observations
 ### 4. `flow.obs.R`
@@ -189,6 +200,9 @@ This script outputs three files, the Diurnal-seasonal, daily, and yearly summari
  - Diurnal-seasonal data: averaged by hour of the day across years by season. Includes mean and standard deviations of: NetRadiation (radNet), Sensible heat flux (H), Latent heat flux (LE), gross primary production (GPP)
  - Daily Data: Daily (day-of-year) means and standard deviations of soil moisture, soil temperature, and GPP; Daily snow depth at each plot.
  - Annual data: Annual means and standard deviations of production and biomass data
+
+[top](#nwt_clm)
+
 
 # Format model output
 ### 5. `flow.sim.R`
@@ -230,6 +244,9 @@ A folder in the base output directory named after the netcdf file basename with:
  4. Unsummarized data: all chosen variables at all timestamps during the simulation
  5. Unit definitions: Units for each of the variables that are written out.
 
+[top](#nwt_clm)
+
+
 # Comparing model and obs
 ### 6. `Obs_sim_com_plots.R` 
 This is a script that creates plots comparing observation and simulation data after the style of Wieder et al. 2017
@@ -251,3 +268,5 @@ This is a script that creates plots comparing observation and simulation data af
 #### Outputs
 
 3 plots comparing the fluxes, soil moisture data, and snow-depth data from the simulation to observations. 
+
+[top](#nwt_clm)
