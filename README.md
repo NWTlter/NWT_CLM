@@ -3,12 +3,12 @@ This repoistory contains scripts that are necessary for running and analyzing da
 
 ## Niwot scripts workflow:
 
-1. Clean L1 tvan data using `tvan_supplemental_cleaning.R`*
-2. Use `flow.lter.clm.R` to generate netcdf forcings for the model.
-3. Follow the instructions in `CLM_instructions.md` to run the model at Niwot Ridge
-4. Run `flow.obs.R` to download and format observations for comparison with the model
-5. Run `flow.sim.R` to format model output for comparisons with observations
-6. Run `Obs_sim_com_plots.R` to create comparison plots between simulation and observations
+1. [Clean L1 data](#clean-l1-data) from tvan data using `tvan_supplemental_cleaning.R`*
+2. [Gap fill and generate .nc forcings](#generate-atmospheric-forcings-for-clm) with `flow.lter.clm.R` 
+3. [Run the model](#run-the-model) at Niwot Ridge by following the instructions in `CLM_instructions.md` 
+4. [Download and format observations](#download-and-format-observations) for comparison with the model using `flow.obs.R`
+5. [Format model output](#format-model-output) for comparisons with observations using `flow.sim.R` 
+6. [create comparison plots](#comparing-model-and-obs) between simulation and observations with `Obs_sim_com_plots.R`
 
 *This script will be rendered obsolete once the Tvan data is available on AmeriFlux 
 
@@ -18,8 +18,8 @@ This repoistory contains scripts that are necessary for running and analyzing da
 
 ## How to run each script
 
-### 1. `tvan_supplemental_cleaning.R`
-
+# Clean L1 data
+### 1. `tvan_supplemental_cleaning.R` 
 This script cleans up Tvan L1 data that has been produced with the Niwot LTER `tvan_L1_preprocess.R` script from the Niwot LTER's repository. It is a temporary script meant to add a few extra cleaning steps to the L1 tvan data, until that data can be uploaded to AmeriFlux. The script reads in ReddyProc-ready data output by the `tvan_L1_preprocess.R` script, filters several problem spots, plots yearly comparisons between the filtered and unfiltered data, downloads Saddle Met data from EDI to fill in the gaps in air temperature after 2016, and writes out the data to two files called `tvan_[tower]_[start_timestamp]_to_[end_endtimestamp]_flux_P_reddyproc_cleaned.txt`
 
 #### Inputs
@@ -62,6 +62,7 @@ File structure:
 
 ```
 
+# Generate atmospheric forcings for CLM
 ### 2. `flow.lter.clm.R`
 The `flow.lter.clm.R` script generates atmospheric forcings for CLM from Niwot Ridge. It assembles the forcings with observational data from three sources. Daily precipitation data from the saddle that has been distributed into half-hourly data according to the method laid out in Wieder et al. 2017, half-hourly radiation data from the NR1 AmeriFlux tower, the rest of the forcings from the Tvan towers at Niwot.
 
@@ -155,10 +156,13 @@ Options currently under development:
 
 ```
 
-## Now it's time to run CLM... see `CLM_instructions`
+# Run the model
+### 3. `CLM_instructions`
+Now it's time to run CLM... see 
 After running the model we'll compare with observations
 
-### 3. `flow.obs.R`
+# Download and format observations
+### 4. `flow.obs.R`
 Workflow for collating NIWOT LTER data in preparation to compare observations to simulated data. The purpose of this script is to read in observational data from Niwot, and summarize it by three time-levels: Diurnal by season, daily (day of year), and annually.
 
 #### Inputs
@@ -186,7 +190,8 @@ This script outputs three files, the Diurnal-seasonal, daily, and yearly summari
  - Daily Data: Daily (day-of-year) means and standard deviations of soil moisture, soil temperature, and GPP; Daily snow depth at each plot.
  - Annual data: Annual means and standard deviations of production and biomass data
 
-### 4. `flow.sim.R`
+# Format model output
+### 5. `flow.sim.R`
 The goal of this script is to read in netcdf output data from a CLM model simulation and convert it into tab-delimited files that can be compared to observational data. The data produced is half-hourly but is also summarized at three levels: Diurnal by season, daily (day of year), and annually. Depending on the vegetation community that is specified by the user, a different level of soil will be used for the upper layer of soil moisture and soil temperature data. This is because Tvan soil data is collected at 10cm while the saddle sensor network soil data is collected at 5cm. 
 
 #### Inputs
@@ -225,9 +230,9 @@ A folder in the base output directory named after the netcdf file basename with:
  4. Unsummarized data: all chosen variables at all timestamps during the simulation
  5. Unit definitions: Units for each of the variables that are written out.
 
-### 5. `Obs_sim_com_plots.R`
-
-A script that creates plots comparing observation and simulation data after the style of Wieder et al. 2017
+# Comparing model and obs
+### 6. `Obs_sim_com_plots.R` 
+This is a script that creates plots comparing observation and simulation data after the style of Wieder et al. 2017
 
 #### Input
 
