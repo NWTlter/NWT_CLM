@@ -4,91 +4,71 @@
 ### CLM code changes
 To run the model at Niwot Ridge, you will need to make sure that your version of CLM has several code changes implemented. The full details of these file changes can be found [here](https://github.com/hhollandmoritz/CTSM/pull/1/files)
 
-1) **Growing season adjustment:** Phenology must be adjusted so that the growing season can start after the summer solstice. (Modifications to `CNPhenologyMod.F90`)
+1) **Growing season adjustment:** Phenology must be adjusted so that: 
+- The growing season can start after the summer solstice, and 
+- Not before soils are snow free.  Here we'll just make the min_temp for growing degree days 4C. 
+
+(Modifications to `CNPhenologyMod.F90`)
 
 At line 855:  
-
+- But also see Leah's arctic phenology changes for CTSM5.1, which as a snow free constraint on decid trees.
 ```fortran
-
-              ! the summer solstice without reaching the threshold value.
+               ! Test to turn off growing degree-day sum, if on.
+               ! This test resets the growing degree day sum if it gets past
+               ! the summer solstice without reaching the threshold value.
                ! In that case, it will take until the next winter solstice
-               ! In that case, it will take until the next winter solstice
-               ! before the growing degree-day summation starts again.
                ! before the growing degree-day summation starts again.
 
 !WW turned off to onset can occur after summer solstice
-               if (onset_gddflag(p) == 1._r8 .and. ws_flag == 0._r8) then
 !               if (onset_gddflag(p) == 1._r8 .and. ws_flag == 0._r8) then
-                  onset_gddflag(p) = 0._r8
 !                  onset_gddflag(p) = 0._r8
-                  onset_gdd(p) = 0._r8
 !                  onset_gdd(p) = 0._r8
-               end if
 !               end if
 
 
                ! if the gdd flag is set, and if the soil is above freezing
-               ! if the gdd flag is set, and if the soil is above freezing
-               ! then accumulate growing degree days for onset trigger
                ! then accumulate growing degree days for onset trigger
 
-
                soilt = t_soisno(c, phenology_soil_layer)
-               soilt = t_soisno(c, phenology_soil_layer)
-               if (onset_gddflag(p) == 1.0_r8 .and. soilt > SHR_CONST_TKFRZ) then
-               if (onset_gddflag(p) == 1.0_r8 .and. soilt > 277._r8) then !WW added
+               ! WW modified to increase the critical temperature only occurs after soils are unfrozen (here 4C)
+               if (onset_gddflag(p) == 1.0_r8 .and. soilt > 277._r8) then !SHR_CONST_TKFRZ) then
                   onset_gdd(p) = onset_gdd(p) + (soilt-SHR_CONST_TKFRZ)*fracday
-!              if (onset_gddflag(p) == 1.0_r8 .and. soilt > SHR_CONST_TKFRZ + 1._r8) then !WW added
-                  onset_gdd(p) = onset_gdd(p) + (soilt-SHR_CONST_TKFRZ )*fracday  
-               end if
                end if
 
-
-!               if (onset_gddflag(p) == 1.0_r8 .and. soilt > SHR_CONST_TKFRZ) then
-!                  onset_gdd(p) = onset_gdd(p) + (soilt-SHR_CONST_TKFRZ)*fracday
-!               end if
-
-               ! set onset_flag if critical growing degree-day sum is exceeded
-               ! set onset_flag if critical growing degree-day sum is exceeded
-               if (onset_gdd(p) > crit_onset_gdd) then
-               if (onset_gdd(p) > crit_onset_gdd) then
-                  onset_flag(p) = 1.0_r8
-                  onset_flag(p) = 1.0_r8
 ```
 
-At line 921:
+At line 921, added a note to modify `crit_dayl` for offset:
+
+- Also see Leah's arctic phenology changes
 
 ```fortran
-              ! only begin to test for offset daylength once past the summer sol
-	       ! WW critical day length = 10.9 hours on parameter file
-               if (ws_flag == 0._r8 .and. dayl(g) < crit_dayl) then
-               if (ws_flag == 0._r8 .and. dayl(g) < crit_dayl) then
-                  offset_flag(p) = 1._r8
-                  offset_flag(p) = 1._r8
-                  offset_counter(p) = ndays_off * secspday
-                  offset_counter(p) = ndays_off * secspday
+           ! only begin to test for offset daylength once past the summer sol
+	       ! WW to correct offset, critical day length = 10.9 hours on parameter file (check for CLM5)
 ```
 
 2) **Relative humidity and Photosynthesis:** Photosynthesis must be modified so that the relative humidity no longer controls photosynthesis. (Modifications to `PhotosynthesisMod.F90`)
 
-At line 1611:
+At line 1642:
 
 ```fortran
-             !now the constraint is no longer needed, Jinyun Tang
+               !now the constraint is no longer needed, Jinyun Tang
                ceair = min( eair(p),  esat_tv(p) )
-               ceair = min( eair(p),  esat_tv(p) )
-               ceair = esat_tv(p)       !WW added, turn of rh effect on psn 
+               ! WW to remove rh effect on psn 
+               ceair = esat_tv(p)
 
                if (      stomatalcond_mtd == stomatalcond_mtd_bb1987 )then
-               if (      stomatalcond_mtd == stomatalcond_mtd_bb1987 )then
-                  rh_can = ceair / esat_tv(p)
                   rh_can = ceair / esat_tv(p)
                else if ( stomatalcond_mtd == stomatalcond_mtd_medlyn2011 )then
-               else if ( stomatalcond_mtd == stomatalcond_mtd_medlyn2011 )then
+                  ! Put some constraints on RH in the canopy when Medlyn stomatal conductance is being used
+                  rh_can = max((esat_tv(p) - ceair), 50._r8) * 0.001_r8
+               end if
+
+               ! Electron transport rate for C3 plants. Convert par from W/m2 to
+               ! umol photons/m**2/s using the factor 4.6
 ```
 
 
-3) **Root dynamics modifications:** Root fraction in soil must be turned on. (Modifications to `SoilStateType.F90`)
+3) **Write out root fraction by soil layer:** modify default history fields. (Modifications to `SoilStateType.F90`)
 
 At line 233: 
 
@@ -96,40 +76,22 @@ At line 233:
 ! WW turned off to make ROOTFR = active
 !    if (use_dynroot) then
        this%rootfr_patch(begp:endp,:) = spval
-       this%rootfr_patch(begp:endp,:) = spval
-       call hist_addfld2d (fname='ROOTFR', units='proportion', type2d='levgrnd', &
        call hist_addfld2d (fname='ROOTFR', units='proportion', type2d='levgrnd', &
             avgflag='A', long_name='fraction of roots in each soil layer', &
-            avgflag='A', long_name='fraction of roots in each soil layer', &
             ptr_patch=this%rootfr_patch, default='active')
-            ptr_patch=this%rootfr_patch, default='active')
-    end if
 !    end if
-
-
-    if ( use_dynroot ) then
-    if ( use_dynroot ) then
-       this%root_depth_patch(begp:endp) = spval
-       this%root_depth_patch(begp:endp) = spval
 ```
 
 
 At line 250:
 ```fortran
 
-      this%rootr_patch(begp:endp,:) = spval
-       call hist_addfld2d (fname='ROOTR', units='proportion', type2d='levgrnd', &
+    if (use_cn) then
+       this%rootr_patch(begp:endp,:) = spval
        call hist_addfld2d (fname='ROOTR', units='proportion', type2d='levgrnd', &
             avgflag='A', long_name='effective fraction of roots in each soil layer (SMS method)', &
-            avgflag='A', long_name='effective fraction of roots in each soil layer (SMS method)', &
-            ptr_patch=this%rootr_patch, l2g_scale_type='veg', default='inactive')
             ptr_patch=this%rootr_patch, l2g_scale_type='veg', default='active') ! WW made active
     end if
-    end if
-
-
-    if (use_cn .and. .not.(use_hydrstress)) then
-    if (use_cn .and. .not.(use_hydrstress)) then
 ```
 
 ## Generating Single Point Domain and Surface data
@@ -175,7 +137,6 @@ dir_output='/glade/work/'+myname+'/single_point_nwt_forcings/'
 module load python
 python singlept
 ```
-
 
 
 ## Changes to surface datasets files:
@@ -226,7 +187,60 @@ Move into your case directory
 ```bash
 cd /glade/u/home/$USER/clm5_cases/informative_case_name_here
 ```
-## 2) Set up the datm streams (forcing files)
+## 2) Setup the case computational requirements
+Modify the *.xml files to specify the run conditions and computer-use requirements
+```bash
+# PES changes to run light and fast!
+# The we can make the following xml changes BEFORE you set up your case
+
+./xmlchange ROOTPE=0          
+./xmlchange JOB_QUEUE=share   
+./xmlchange JOB_WALLCLOCK_TIME=6:00:00 
+./xmlchange MPILIB=mpi-serial 
+./case.setup
+
+```
+
+## 3) Setup the case basic simulation conditions
+Modify the `env_run.xml` file to specify the simulation conditions with the following code blocks
+
+1. Point to domain files
+2. Cycle over 5 years of input data
+3. Start from coldstart, in AD mode for 400 years total
+- setting `RUN_REFDATE` to 0008 should let us start with 2008 forcing data?
+4. then make changes to user_nl_* files, like pointing to the right surface dataset and limiting the history file output.
+
+```bash
+./xmlchange ATM_DOMAIN_FILE=domain.lnd.fv0.9x1.25_gx1v7_254.42_40.05.151020.nc
+./xmlchange ATM_DOMAIN_PATH=/glade/p/cgd/tss/people/wwieder/inputdata/single_point
+./xmlchange LND_DOMAIN_FILE=domain.lnd.fv0.9x1.25_gx1v7_254.42_40.05.151020.nc
+./xmlchange LND_DOMAIN_PATH=/glade/p/cgd/tss/people/wwieder/inputdata/single_point
+
+./xmlchange DATM_CLMNCEP_YR_START=2008
+./xmlchange DATM_CLMNCEP_YR_END=2012
+./xmlchange STOP_OPTION=nyears
+
+./xmlchange CLM_FORCE_COLDSTART=on
+./xmlchange CLM_ACCELERATED_SPINUP=on
+./xmlchange STOP_N=200
+./xmlchange REST_N=100
+./xmlchange RUN_REFDATE=0008-01-01
+./xmlchange RUN_STARTDATE=0008-01-01
+./xmlchange CONTINUE_RUN=FALSE
+./xmlchange RESUBMIT=1
+
+echo "fsurdat = '/glade/p/cgd/tss/people/wwieder/inputdata/single_point/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_NWT_70cm_soildepth.nc'" >> user_nl_clm
+echo "mapalgo = 'nn','nn','nn','nn','nn'" >> user_nl_datm
+echo "hist_mfilt = 20" >> user_nl_clm
+echo "hist_nhtfrq = -8760" >> user_nl_clm
+echo "hist_empty_htapes = .true." >> user_nl_clm
+echo "hist_fincl1 = 'TOTECOSYSC', 'TOTECOSYSN', 'TOTSOMC', 'TOTSOMN', 'TOTVEGC', 'TOTVEGN', 'TLAI', 'GPP', 'CPOOL', 'NPP', 'TWS', 'H2OSNO'" >> user_nl_clm
+
+./preview_namelists
+qcmd -- ./case.build
+```
+
+## 4) Set up the datm streams (forcing files)
 
 If you have not already done so, move the netcdf forcing files generated by `flow.lter.clm.R` to the server. There are a different set of forcing files for each vegetation community.
 
@@ -321,19 +335,19 @@ Solar forcings file:
 ```
 
 TPQW forcings file:
-
+** Note, the default case is looking for specific humidity `QBOT`, but relative humidity `RH` (rh) is also fine, so long as this variable name is provided
 ```xml
 <?xml version="1.0"?>
 <file id="stream" version="1.0">
 ....
 <fieldInfo>
    <variableNames>
-       ZBOT     z
-       TBOT     tbot
-       RH       rh
-       WIND     wind
-       PSRF     pbot
-       FLDS     lwdn
+      ZBOT     z
+      TBOT     tbot
+      WIND     wind
+      RH       rh
+      PSRF     pbot
+      FLDS     lwdn
    </variableNames>
 ....
 ```
@@ -343,57 +357,7 @@ TPQW forcings file:
 | **NOTE:** The latitude and longitude values of the domain file, surface datasets, and your netcdf forcing files *must* match! |
 | <span> |
 
-## 3) Setup the case computational requirements
 
-Modify the *.xml files to specify the run conditions and computer-use requirements
-```bash
-./xmlchange --file env_mach_pes.xml --id COST_PES --val 36 # cores used relative to # tasks
-./xmlchange --file env_mach_pes.xml --id TOTALPES --val 1 # total physical cores used
-./xmlchange --file env_mach_pes.xml --id NTASKS --val 1 # number of mpi tasks
-./xmlchange --file env_mach_pes.xml --id NTASKS_PER_INST --val 1 # ntasks per instance of each component
-./xmlchange --file env_mach_pes.xml --id ROOTPE --val 0 # global mpi task of component
-
-# Changes to all xml files
-./xmlchange MPILIB=mpi-serial # in any xml file with MPILIB, change value to mpi-serial
-
-# Changes to env_workflow.xml
-./xmlchange --file env_workflow.xml --id JOB_WALLCLOCK_TIME --val 6:00:00 # time alloted for job to run - much longer for BGC run.
-./xmlchange --file env_workflow.xml --id JOB_QUEUE --val share # run on shared queue - this will run faster because you can share nodes with other users
-
-./case.setup
-
-```
-## 4) Setup the case basic simulation conditions
-Modify the `env_run.xml` file to specify the simulation conditions
-```bash
-# Starting conditions
-./xmlchange --file env_run.xml  --id CLM_FORCE_COLDSTART --val on # CLM forced to do a cold start with arbitrary initial conditions (also used for spin-up). 
-./xmlchange --file env_run.xml --id DATM_CLMNCEP_YR_START --val 2008 # starting year to loop data over in spinup - should correspond to first year of forcing data
-./xmlchange --file env_run.xml --id DATM_CLMNCEP_YR_END --val 2016 # endingyear to loop data over in spinup - should correspond to last year of forcing data
-./xmlchange --file env_run.xml --id STOP_OPTION --val nyears # the run length; works with STOP_N and STOP_DATE
-
-# Set conditions for BCG run for Accelerated Decomposition during startup
-./xmlchange --file env_run.xml --id CLM_ACCELERATED_SPINUP --val on # use the accelerated decomposition mode for spinup
-./xmlchange --file env_run.xml --id STOP_N --val 50 # gives the numerical value of STOP_OPTION; if STOP_OPTION is nyears and STOP_N is 5, the model runs for 5 years. 
-./xmlchange --file env_run.xml --id REST_N --val 50 # sets the model restart rights; takes the value of REST_OPTION, which has the same units as the STOP_N by default. (i.e. years)
-./xmlchange --file env_run.xml --id RUN_REFDATE --val 0000-01-01 # reference date for hybrid or branch runs
-./xmlchange --file env_run.xml --id RUN_STARTDATE --val 0000-01-01 # the startdate - only used for startup or hybrid runs; branch runs ignore this value in favor of a reference date specified in the restart dataset. 
-./xmlchange --file env_run.xml --id CONTINUE_RUN --val FALSE
-./xmlchange --file env_run.xml --id RESUBMIT --val 7 # run in 8 batchs of 50 years each; 400 years total; this may not be necessary, but if you find your runs ending in the middle, try this command instead.
-
-```
-
-Finally we set the same options for the locations of the land and atmosphere domain files
-
-```bash
-# Locations of the Atmosphere and land data
-# Locations of the Atmosphere and land data
-./xmlchange --file env_run.xml --id ATM_DOMAIN_FILE --val domain.lnd.fv0.9x1.25_gx1v7_254.42_40.05.151020.nc
-./xmlchange --file env_run.xml --id ATM_DOMAIN_PATH --val /glade/work/hholland/single_point_nwt_neon_forcings
-./xmlchange --file env_run.xml --id LND_DOMAIN_FILE --val domain.lnd.fv0.9x1.25_gx1v7_254.42_40.05.151020.nc
-./xmlchange --file env_run.xml --id LND_DOMAIN_PATH --val /glade/work/hholland/single_point_nwt_neon_forcings
-
-```
 
 ## 5) Get the modified parameter files
 
@@ -425,24 +389,22 @@ grep "param" /path/to/your/case/case_dir/Buildconf/clmconf/lnd_in
 2) Copy the original parameter file to your case directory
 
 ```bash
-cp /glade/p/cesmdata/cseg/inputdata/lnd/clm2/paramdata/clm5_params.c200519.nc /path/to/your/case/case_dir/clm5_params.c200519.nc
+cp /glade/p/cesmdata/cseg/inputdata/lnd/clm2/paramdata/clm5_params.c200624.nc /path/to/your/case/case_dir/clm5_params.c200624.nc
 ```
 
 3) Use `nco` commands to change parameter files. In the parameter files change
 ```bash
 module load nco # load nco module if not already loaded
 # Modify the fine root:leaf ratio to 2
-ncap2 -O -s froot_leaf=froot_leaf+0.5 clm5_params.c200519.nc clm5_params.c200519_modfrootleaf.nc
-# Modify the leaf C:N ratio to 32
-ncap2 -O -s leafcn=leafcn+3.9730941704 clm5_params.c200519_modfrootleaf.nc clm5_params.c200519_modfrootleaf_modleafcn.nc
+# Modify the leaf C:N ratio to 32, 
+# the easiest way to do this is to change the value for all parameters
+ncap2 -O -s 'froot_leaf=froot_leaf * 0+2;leafcn=leafcn * 0+32' clm5_params.c200624.nc clm5_params.c200624_NWTmods.nc
 ```
 
 ## 6) Change the user namelist files
 The user namelist files are used to specify modifications to the run that are not already specified in the parameter files or *.xml files. We will use them to specify the locations of our modified surface dataset, and parameter files, as well as specifying the kind of output we want.
 
-
 1) First, set the surface dataset file. This file differs for the DM, MM, WM, and SB communities. 
-
 
    - Several changes have been made to the surface datasets. All have had their clay/sand percentages adjusted to mimic the rocky soil more accurately. 
    - In addition, a different soil depth must be used for each vegetation community: 
@@ -478,7 +440,7 @@ echo "taxmode= 'cycle','cycle','cycle','cycle','cycle'" >> user_nl_datm
 
 5) Finally, set the output variables and frequency in user_nl_clm; Since this is a spinup run, we will write less frequently to the output files. And writeout fewer variables.
 ```bash
-echo "hist_mfilt= 10" >> user_nl_clm # 10*8760 hours of data will be saved in each output file; i.e. 10 years per output file. 
+echo "hist_mfilt= 20" >> user_nl_clm # 20*8760 hours of data will be saved in each output file; i.e. 10 years per output file. 
 echo "hist_nhtfrq= -8760" >> user_nl_clm # number of hours in a year; 
 
 # These lines reduce the amount of times .h0. files are written.
@@ -511,12 +473,12 @@ cp ~/clm5.0-master/tools/contrib/SpinupStability.ncl /path/to/your/case/case_dir
 Modify script: 
 
 ```bash
-;  SPT (single point) NWT BGC 2008-2011
+;  SPT (single point) NWT BGC 2008-2012
   caseid = "case_name" ; CHANGE ME to case name
   username = "USER"   ; CHANGE ME to your user name
   annual_hist = True
   region = "SPT"                 ; Global, Arctic, or SPT (single point)
-  subper = 10                    ; Subsampling period in years; CHANGE ME to # years forcing data that you are useing
+  subper = 20                    ; Subsampling period in years; CHANGE ME to # years forcing data that you are useing, (or the frequency of your history file output).
   
 ```
 Optional: ask the script to generate spinup plots. 
@@ -537,33 +499,36 @@ If the spinup looks good, proceed. Otherwise, run for longer until it is spun up
 Turn off advanced decomposition mode for 200 years and rerun. 
 
 ```bash
-./xmlchange --file env_run.xml --id CLM_FORCE_COLDSTART --val off # was set to: on; start from proscribed conditions set by the end of the AD mode run
-./xmlchange --file env_run.xml --id CLM_ACCELERATED_SPINUP --val off # was set to: on; turn off AD mode
-
+./xmlchange CLM_FORCE_COLDSTART=off 
+./xmlchange CLM_ACCELERATED_SPINUP=off 
 ```
+
 Set the simulation to run for 200 years starting from where it left off before
+- turn off AD and coldstart
 
 ```bash
-./xmlchange --file env_run.xml --id STOP_N --val 50 
-./xmlchange --file env_run.xml --id REST_N --val 50 
-./xmlchange --file env_run.xml --id CONTINUE_RUN --val FALSE
-./xmlchange --file env_run.xml --id RESUBMIT --val 3 # run in 4 batchs of 50 years each; 200 years total
-./xmlchange --file env_run.xml --id RUN_REFDATE --val 0400-01-01 # was set to: 0000-01-01
-./xmlchange --file env_run.xml --id RUN_STARTDATE --val 0400-01-01 # was set to: 0000-01-01
+./xmlchange CLM_FORCE_COLDSTART=off
+./xmlchange CLM_ACCELERATED_SPINUP=off
 
+./xmlchange STOP_N=200
+./xmlchange REST_N=100
+./xmlchange CONTINUE_RUN=FALSE
+./xmlchange RESUBMIT=0
+./xmlchange RUN_REFDATE=0408-01-01
+./xmlchange RUN_STARTDATE=0408-01-01
 ```
 
 Tell the model where to find the proscribed conditions with which to start the model.
 ```bash
-echo "finidat= '/glade/scratch/$USER/archive/case_name/rest/0400-01-01-00000/case_name.clm2.r.0400-01-01-00000.nc'" >> user_nl_clm
+echo "finidat= '/glade/scratch/$USER/archive/case_name/rest/0408-01-01-00000/case_name.clm2.r.0408-01-01-00000.nc'" >> user_nl_clm
 ```
 
-Resubmit the case, this time advanced decomposition is of. 
+Resubmit the case, this time accellerated decomposition is off. 
 ```bash
 ./case.submit
 ```
 
-## 8) Check the spinup again
+## 10) Check the spinup again
 
 Run the script
 
@@ -573,33 +538,38 @@ ncl SpinupSustainability.ncl
 ```
 If spinup looks good, proceed with transient run.
 
-## 9) Run transient run with forcings
+## 11) Run transient run with forcings
 
 A transient run, refers to a run in which the actual experimental data is generated. Usually it takes place under experimental conditions as well. 
 
 Point to new postAD restart file in user_nl_clm
 ```bash
-echo "finidat= '/glade/scratch/$USER/archive/case_name/rest/0600-01-01-00000/case_name.clm2.r.0600-01-01-00000.nc'" >> user_nl_clm
+echo "finidat= '/glade/scratch/$USER/archive/case_name/rest/0608-01-01-00000/case_name.clm2.r.0608-01-01-00000.nc'" >> user_nl_clm
 ```
 
-Change model output to half-hourly data in user_nl_clm and change output variables to produce variables that are comparable to the observations.
+Change model output to half-hourly data in user_nl_clm and change output variables to produce variables that are comparable to the observations. Below:
+
+- **Older entries in user_nl_clm used for spinup (e.g., `finidat`, `hist_mfilt`, etc.) should be commented out or deleted**
+- h0 = standard monthly means
+- h1 files will be annual, 30 minute output
 
 ```bash
-echo "hist_nhtfrq = 10" >> user_nl_clm
-echo "hist_mfilt  = 17520" >> user_nl_clm   #writes out half-hourly data
-# Note - Removed BTRAN since it doesn't exist in CLM5
- echo "hist_fincl  = 'SNOWICE','FSDS','FLDS','FSR','FSA','FIRE','FIRA','FSH','FCTR','FCEV','FGEV','FGR','FGR12','FSM','TSOI','COSZEN','RAIN','SNOW','H2OSOI','WA','ZWT','ELAI','FPSN','TV','RSSUN','RSSHA','FSH_G','RHAF','RH_LEAF','RH','T10','TG','SABG','SABV','EFLX_LH_TOT','SNOW_DEPTH','SNOWLIQ','SNOWDP','QRUNOFF','INT_SNOW','FSNO'" >> user_nl_clm
-
+echo "finidat= '/glade/scratch/wwieder/archive/clm50bgc_NWT_ff/rest/2608-01-01-00000/clm50bgc_NWT_ff.clm2.r.2608-01-01-00000.nc' " >> user_nl_clm
+echo "hist_nhtfrq = 0,1" >> user_nl_clm
+echo "hist_mfilt  = 1,17520" >> user_nl_clm
+echo "hist_fincl2  = 'SNOWICE','FSDS','FLDS','FSR','FSA','FIRE','FIRA','FSH','FCTR','FCEV','FGEV','FGR','FGR12','FSM','TSOI','COSZEN','RAIN','SNOW','H2OSOI','FPI','HR','ELAI','BTRAN2','FPSN','AR','RSSUN','RSSHA','FSH_G','RHAF','RH_LEAF','RH','T10','TG','SABG','SABV','EFLX_LH_TOT','SNOW_DEPTH','SOILLIQ','TV','QRUNOFF','INT_SNOW','GPP','NPP','TOTVEGC','TOTSOMC','TOTECOSYSC','WOODC','NEE','AGNPP','BGNPP','FPI'" >> user_nl_clm
 ```
 
 Set env_run.xml up for transient run:
 
 ```bash
-./xmlchange --file env_run.xml --id STOP_N --val 10 # number of years of forcing data
-./xmlchange --file env_run.xml --id RUN_STARTDATE --val 2008-01-01 
-./xmlchange --file env_run.xml --id DATM_CLMNCEP_YR_END --val 2017 # end year of forcing data
+./xmlchange STOP_N=10 
+./xmlchange RUN_STARTDATE=2008-01-01 
+./xmlchange DATM_CLMNCEP_YR_END=2017 
 
 ```
+
+You'll also have to make sure the **`user_datm.streams.txt.CLMGSWP3v1`** files have years for the full study period (2008-2017 in this case). I just added these manually.
 
 Check that your namelist changes work
 ```bash
@@ -626,5 +596,5 @@ If you are cloning the case to alter vegetation community settings make sure you
 
  - [ ] user_datm streams must point to the correct forcing data
  - [ ] surface dataset files must be correct for the vegetation community
- - [ ] copy the parameter file into the new case directory
+ - [ ] make sure your user_nl_clm is still pointing to the right surface dataset, parameter file, etc. (if you want you can copy the parameter file into the new case directory, but need to point to it in user_nl_clm)
 
