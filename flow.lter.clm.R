@@ -45,12 +45,14 @@ makeplots <- TRUE # FALSE
 # The version data for the FP standard conversion processing
 ver <- paste0("v",format(Sys.time(), "%Y%m%dT%H%m"))
 
+# Base directory for all files
+DirBase <- "~/Desktop/Working_files/Niwot/"
 # Base directory for output
-DirOutBase <- paste0("~/Desktop/Working_files/Niwot/CLM/data",ver)
+DirOutBase <- paste0(DirBase,"CLM/data",ver)
 
 #### Download and input options ####
 # Directory to download precipitation and radidation data to
-DirDnld = "~/Desktop/Working_files/Niwot/lter_flux"
+DirDnld = paste0(DirBase,"lter_flux")
 
 # Should a newer version of precip data be automatically 
 # downloaded if one is available?

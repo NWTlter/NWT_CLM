@@ -1,3 +1,4 @@
+rm(list = ls())
 
 ##############################################################################
 # Dependencies
@@ -15,9 +16,6 @@ lapply(packReq, function(x) {
     library(x, character.only = TRUE)
   }})
 
-#Install packages from github repos
-# devtools::install_github(c("NEONScience/eddy4R/pack/eddy4R.base", "NEONScience/NEON-utilities/neonUtilities"))
-# 
 #Setup Environment
 options(stringsAsFactors = F)
 
@@ -27,21 +25,26 @@ options(stringsAsFactors = F)
 
 #### Output Options ####
 
+# Base directory for all files
+DirBase <- "~/Desktop/Working_files/Niwot/CLM/"
 # Base directory for output
-DirOutBase <- paste0("~/Downloads/OBS_SIM_COMP/")
+DirOutBase <- paste0(DirBase,"OBS_SIM_COMP/")
 
 # Simulation Name (for organizing output and naming)
-sim_name <- "2000datm_CLM50bgc_nwt_DM.clm2.h0.2008-01-01-00000"
+
+sim_name <- "clm50bgc_NWT_ff.clm2.h1.2008-2017"
 
 #### Input options ####
 # Simulation data directory (output from flow.sim.R script)
-DirSimIn = "~/Downloads/SIM/data/2000datm_CLM50bgc_nwt_DM.clm2.h0.2008-01-01-00000"
+DirSimIn = paste0(DirBase,'SIM/',sim_name)
 
 # Observation data directory (output from flow.obs.R script)
-DirObsIn = "~/Downloads/OBS/datav20200820T2108"
+# Maybe this should be renamed to facilitate analyses?
+DirObsIn = paste0(DirBase,'OBS/datav20200825T1508')
 
 # What vegetation community are we working with
 vegetation_com <- "FF"
+
 ##############################################################################
 # Static workflow parameters - these are unlikely to change
 ##############################################################################
@@ -54,6 +57,7 @@ sim_file_list <- list.files(DirSimIn, full.names = TRUE)
 
 # observation file list
 obs_file_list <- list.files(DirObsIn, full.names = TRUE)
+
 ##############################################################################
 # Load in flux data
 ##############################################################################
@@ -174,3 +178,4 @@ ggplot(daily.plot, aes(x = dummydate)) +
 ##############################################################################
 # Load in snow depth data
 ##############################################################################
+

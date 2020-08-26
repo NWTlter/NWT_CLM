@@ -1,6 +1,3 @@
-# Check spinup
-
-# Plotting basic graphs to check spinup of model
 rm(list = ls())
 
 ##############################################################################
@@ -22,12 +19,14 @@ lapply(packReq, function(x) {
 # Workflow parameters
 ##############################################################################
 #### Output Options ####
-# Base directory for output
-DirOutBase <- paste0("~/Desktop/Working_files/Niwot/CLM")
+DirOut <- paste0("~/Desktop/Working_files/Niwot/CLM/")
+
+# Base directory for output, to conform with plotting script
+DirOutBase <- paste0(DirOut,"SIM/")
 
 #### Input options ####
 # The input directory where simulation data is located
-DirIn <- "~/Desktop/Working_files/Niwot/CLM/"
+DirIn <- DirOut
 
 # The name of the netcdf file from the simulation you want to work with
 ncdf_fp <- "clm50bgc_NWT_ff.clm2.h1.2008-2017.nc"
@@ -44,7 +43,7 @@ title <- sub("\\.nc$","", basename(ncdf_fp))
 
 # Output subdirector is the DirOutBase + the title of the netcdf
 DirOut <- paste0(DirOutBase, title)
-
+print(DirOut)
 # Create output directory if it doesn't exist
 if (!dir.exists(DirOut)) dir.create(DirOut, recursive = TRUE)
 
@@ -359,91 +358,8 @@ write.table(unitlist,
             col.names = TRUE, row.names = FALSE, sep = "\t")
 
 
+print('script complete')
 # #####################################################################################
-# diag.plots <- plot_var(var = var, unitlist = unitlist,
-#          ncdata = run_data, strtyr = 0, endyr = 20)
-# 
-# pdf(paste0(dir, title, "_diag_plots.pdf"))
-# diag.plots
-# dev.off()
-# 
-# # Read in flux tower data:
-# library(REddyProc)
-# # data.G <- fLoadTXTIntoDataframe("~/Downloads/tvan_obs/Tvan_flux_OBS_2008-2013b.txt")
-# # data.G
-# nsteps <- 48 * (365*6 + 2)
-# 
-# data.sno <- read.csv("~/Downloads/tvan_obs/SnowDepth_daily.csv")
-# names(data.sno)
-# 
-# Data.flx <- fLoadTXTIntoDataframe("~/Downloads/tvan_obs/Tvan_flux_OBS_2008-2013b.txt")
-# names(Data.flx)
-# #  units(Data.flx)
-# maxYear <- max(Data.flx$Year)
-# 
-# #read in ground flux measurements:
-# dir2 <- '/Users/wwieder/Desktop/Working_files/Niwot/NR_fluxes/TVan/G/'
-# Data.G  <- fLoadTXTIntoDataframe("~/Downloads/tvan_obs/Wieder_Niwot_CLM_G.txt")
-# Gobs    <- Data.G$G[Data.G$Year <= maxYear]
-# 
-# 
-# # Prepare data for comparison plots - need, timestamp + variables of interest
-# # plus any units need to be converted to be the same
-# # Flux tower data
-# Data.flx.plot <- Data.flx %>%
-#   mutate(timestamp = as.POSIXct(paste0(Year, "-", MO, "-", DD, " ", HR, ":", MM), 
-#                                 tz = "MST")) %>%
-#   left_join(data.sno %>%
-#               mutate(timestamp = as.POSIXct(paste0(year_mean, "-", 
-#                                                    mo_mean, "-", 
-#                                                    day_mean, 
-#                                                    " ", "00:00"), 
-#                                             tz = "MST")),
-#             by = c("Year" = "year_mean", "MO" = "mo_mean", "DD" = "day_mean")) %>%
-#   rename(date = timestamp.y, timestamp = timestamp.x) %>%
-#   select(Year, MO, DD, HR, MM, DecimalDate, timestamp, date, everything()) %>%
-#   group_by(Year, MO) %>%
-#   mutate_at(vars(NEE:SnoDep_med), ~mean(., na.rm = TRUE)) %>%
-#   ungroup() %>%
-#   filter(DD == "1") %>%
-#   select(-HR, -MM, -DecimalDate, -timestamp, -date) %>%
-#   unique() %>%
-#   mutate(timestamp = as.POSIXct(paste0(Year, "-",
-#                                        MO, "-",
-#                                        DD, " ", "00:00"),
-#                                 tz = "MST")) %>%
-#   select(-Year, -MO, -DD) %>%
-#   rename(GPP = GPP_f, Rn = Rn_MDS) %>%
-#   select(timestamp, everything())
-# 
-# run_data.plot <- as.data.frame(run_data) %>%
-#   select(mcdate, mcsec, AGNPP:WOODC) %>%
-#   mutate(mcdate = stringr::str_pad(mcdate, width = 8, side = "left", pad = "0"),
-#          time = as.POSIXct(lubridate::ymd_hm(paste0(mcdate, "0000"), tz = "UTC") + 
-#            lubridate::dseconds(mcsec), tz = "UTC"),
-#          timestamp = as.POSIXct(lubridate::with_tz(time,tzone = "MST"))
-#          ) %>%
-#          #timestamp = as.POSIXct(paste0(mcdate," 00:00"), 
-#          #                        format = "%Y%m%d HH:MM", tz = "GMT")) %>%
-#   select(timestamp, AGNPP:WOODC) %>%
-#   # modify some key variables
-#   mutate(Rn = FSA - FIRA,
-#          T10 = T10 - 273.15, # convert to deg C
-#          GPP = GPP * 1000, # convert g to mg
-#          NEE = NEE * 1000, # convert g to mg
-#          SNOW_DEPTH = SNOW_DEPTH * 100) # convert m to cm
-# 
-# 
-# sim_var <- c("NEE", "GPP", "EFLX_LH_TOT", "FSH", "T10", "Rn", "SNOW_DEPTH", "SOILLIQ_3")
-# obs_var <- c("NEE", "GPP", "LE", "H", "Tair", "Rn", "SnoDep_med", "SoilMoisture")
-# sim_data <- run_data.plot
-# obs_data <- Data.flx.plot
-# unitlist <- c("mgC/m^2/s", "mgC/m^2/s", "W/m^2" , "W/m^2", "deg C", "W/m^2", "cm", "kg/m2")
-# names(unitlist) <- obs_var
-# 
-# 
-# obs_comp_plot <- plot_var_comp(sim_var = sim_var, obs_var = obs_var, sim_data = sim_data, obs_data = obs_data, unitlist = unitlist, title = title)
-# 
-# pdf(paste0(dir, title, "_obs_comp.pdf"))
-# obs_comp_plot
-# dev.off()
+# model data have been processed for plotting & comparison with observations
+# Move onto the `Obs_sim_comp_plots.R` script
+# #####################################################################################
