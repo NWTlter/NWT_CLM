@@ -2,7 +2,6 @@
 
 # Plotting basic graphs to check spinup of model
 rm(list = ls())
-#source("~/Documents/Fierer_lab/NCAR/NEON_LTER_NCAR/NWT_analyses/Tvan_plots/CLM_utlis.R")
 
 ##############################################################################
 # Dependencies
@@ -24,19 +23,18 @@ lapply(packReq, function(x) {
 ##############################################################################
 #### Output Options ####
 # Base directory for output
-DirOutBase <- paste0("~/Downloads/SIM/data/")
+DirOutBase <- paste0("~/Desktop/Working_files/Niwot/CLM")
 
 #### Input options ####
 # The input directory where simulation data is located
-DirIn <- "~/Downloads/"
+DirIn <- "~/Desktop/Working_files/Niwot/CLM/"
 
 # The name of the netcdf file from the simulation you want to work with
-ncdf_fp <- "2000datm_CLM50bgc_nwt_DM.clm2.h0.2008-01-01-00000.nc"
-ncdf_fp <- "test.nc"
+ncdf_fp <- "clm50bgc_NWT_ff.clm2.h1.2008-2017.nc"
 
 #### Vegetation Community ####
 # Which vegetation community is this simulation for?
-veg_com <- "DM" # Options: "FF", "DM", "WM", "MM", "SB", NA
+veg_com <- "FF" # Options: "FF", "DM", "WM", "MM", "SB", NA
 
 ##############################################################################
 # Static workflow parameters - these are unlikely to change
@@ -51,26 +49,6 @@ DirOut <- paste0(DirOutBase, title)
 if (!dir.exists(DirOut)) dir.create(DirOut, recursive = TRUE)
 
 
-
-# dir <- "~/Downloads/"
-# title_list <- c("2000datm_CLM50bgc_nwt.clm2.h0.200yr_spinup",
-#                 "2000datm_CLM50bgc_nwt.clm2.h0.100yr_spinup_frootleaf_parameter_changes",
-#                 "2000datm_CLM50bgc_nwt.clm2.h0.150yr_spinup_modleafcn_parameter_changes",
-#                 "2000datm_CLM50bgc_nwt.clm2.h0.400yr_spinup_leafcn_frootleaf_sandclay_changes",
-#                 "2000datm_CLM50bgc_nwt_DM.clm2.h0.2008-01-01-00000",
-#                 "2000datm_CLM50bgc_nwt_newTvan_base.clm2.h0.monthly_spinup", 
-#                 "2000datm_CLM50bgc_nwt_newTvan_DM.clm2.h0.monthly_100yrs",
-#                 "2000datm_CLM50bgc_nwt_newTvan_base.clm2.h0.monthly_1850_50yrs_test")
-
-# Choose simulation variation
-# 1 = code changes, nothing else - run for 200 yrs
-# 2 = code changes plus frootleaf changed from 1.5 to 2 - run for 100 yrs
-# 3 = code changes plus leafcn changed from 28.026ish to 32 - run for 150 yrs
-# 4 = code changes plus frootleaf, leafcn, and 39%sand23%clay soil type
-# 5 = code changes plus frootleaf, leafcn, and 39%sand23%clay soil type and dry meadow surface file; also a fully spun-up transient run.
-# 6 = monthly measurements from tvan 2008-2016 forcings; ad mode code changes plus frootleaf, leafcn, and 39%sand23%clay soil type
-# 7 = monthly measurements from tvan 2008-2016 forcings; ad mode code changes plus frootleaf, leafcn, and 39%sand23%clay soil type and dry meadow surface file; 100 yrs ad mod
-# title <- title_list[5]
 ################################################################################
 # Helper functions - for downloading and loading data
 ################################################################################
@@ -81,24 +59,16 @@ extract_CLM_vars <- function(infile, nsteps, vars) {
   # nsteps = how many 30minute timesteps worth of data are there?
   # vars = the variables to extract from the netcdf file
   require(ncdf4)
+
+  Data.clm <- nc_open(infile) 
+  # should this not be hard coded?  I'm not sure what it does later on, but it's burried in the code now?
   
-  
-  #infile   <- "~/Downloads/test.nc"
-  
-  Data.clm <- nc_open(infile)   
   nsteps   <- 60 #48 * (365*5 + 2) #48 * (365*6 + 2)
   print(paste("The file has",Data.clm$nvars,"variables"))
   print(paste("The variables are:"))
   print(paste(names(Data.clm$var)))
   summary(Data.clm)
-  #print(Data.clm)
-  
-  # vars <- c("mcdate", "mcsec", "DZSOI", "TV", "T10", "RH", "RH_LEAF", "BTRAN", "FSH",
-  #           "EFLX_LH_TOT", "FGR", "FGR12", "FSDS", "FIRA", "FPSN", "GPP", "NEE", "ELAI",
-  #           "FSR", "FSA", "TSOI", "SOILLIQ", "H2OSOI", "SNOW", "RAIN", "SNOW_DEPTH",
-  #           "QVEGT", "QVEGE", "QSOIL", "FCEV", "FCTR", "FGEV")
-  
-  
+
   # If vars is not given, set it to be all the vars in the file
   # otherwise, take the user-supplied vars
   if(missing(vars)) {
@@ -231,22 +201,6 @@ summarize_vars_by_time <- function(var, unitlist, ncdata, veg_com = NA) {
     mutate(ObsSim = "Sim") %>%
     mutate(veg_com = veg_com)
   
-  # var.plot.diurnal %>%
-  #   select(MonGroup, Hour, ObsSim, starts_with(c("RNET", "FSH", "EFLX", "GPP"))) %>%
-  #   pivot_longer(ends_with("houravg"), names_to = "MeanMetric",
-  #                values_to = "MeanValue") %>%
-  #   pivot_longer(ends_with("hoursd"), names_to = "SDMetric",
-  #                values_to = "SDValue") %>%
-  #   mutate(MeanMetric = gsub("_houravg", "", MeanMetric),
-  #          SDMetric = gsub("_hoursd", "", SDMetric)) %>%
-  #   filter(MeanMetric == SDMetric) %>%
-  #   ggplot(aes(x = Hour)) +
-  #   geom_ribbon(aes(ymin = MeanValue-SDValue, ymax = MeanValue+SDValue),
-  #               alpha = 0.5) +
-  #   geom_line(aes(y = MeanValue, color = ObsSim)) +
-  #   facet_wrap(MonGroup~MeanMetric)
-  
-  
   var.plot.doy <- var.plot.all %>%
     group_by(DoY) %>% 
     mutate(across(all_of(var), .fns = list(doyavg = ~mean(., na.rm = TRUE),
@@ -267,47 +221,12 @@ summarize_vars_by_time <- function(var, unitlist, ncdata, veg_com = NA) {
     mutate(ObsSim = "Sim") %>%
     mutate(veg_com = veg_com)
   
-  ##### ####  
-  #   # get an average of every month
-  #   group_by(month, year) %>%
-  #   mutate(across(all_of(var), .fns = list(monavg = ~mean(., na.rm = TRUE)))) %>%
-  #   ungroup() %>%
-  #   # get a daily average
-  #   group_by(DoY, month, year) %>%
-  #   mutate(across(all_of(var), .fns = list(dailyavg = ~mean(., na.rm = TRUE)))) %>%
-  #   ungroup()
-  # 
-  # var.plot.timestep <- var.plot.all %>%
-  #   select(!contains("monavg"), !contains("dailyavg")) %>%
-  #   pivot_longer(cols = all_of(var), names_to = "Variables", values_to = "Values") %>%
-  #   mutate(Variables_Units = unitlist[Variables])
-  # 
-  # # Monthly averages
-  # var.plot.month <- var.plot.all %>%
-  #   select(mcsec, mcdate, date, month, year, DoY, Hour, timestamp, timestamp_UTC, 
-  #          contains("monavg")) %>%
-  #   filter(grepl(".{1,4}-.{2}-01", timestamp_UTC)) %>% 
-  #   filter(mcsec == 0) %>%
-  #   pivot_longer(cols = contains("monavg"), 
-  #                names_to = "Variables", values_to = "Values") %>%
-  #   mutate(Variables = gsub("_monavg", "", Variables)) %>%
-  #   mutate(Variables_Units = unitlist[Variables])
-  # 
-  # # Daily averages
-  # var.plot.daily <- var.plot.all %>%
-  #   select(mcsec, mcdate, date, month, year, DoY, Hour, timestamp, 
-  #          contains("dailyavg")) %>%
-  #   filter(mcsec == 0) %>%
-  #   pivot_longer(cols = contains("dailyavg"), 
-  #                names_to = "Variables", values_to = "Values") %>%
-  #   mutate(Variables = gsub("_dailyavg", "", Variables)) %>%
-  #   mutate(Variables_Units = unitlist[Variables])
-  #### #### 
   return(list(diurnal_seasonal = var.plot.diurnal, 
               daily = var.plot.doy,
               annual = var.plot.ann,
               all_wide = var.plot.all))
 }
+
 ################################################################################
 # Extract the CLM variables into an R-friendly format
 ################################################################################
