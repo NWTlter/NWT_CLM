@@ -32,7 +32,7 @@ DirOutBase <- paste0(DirBase,"OBS_SIM_COMP/")
 
 # Simulation Name (for organizing output and naming)
 
-sim_name <- "clm50bgc_NWT_ff.clm2.h1.2008-2017"
+sim_name <- "clm50bgc_NWT_dm.clm2.h1.2008-2017"
 
 #### Input options ####
 # Simulation data directory (output from flow.sim.R script)
@@ -42,8 +42,8 @@ DirSimIn = paste0(DirBase,'SIM/',sim_name)
 # Maybe this should be renamed to facilitate analyses?
 DirObsIn = paste0(DirBase,'OBS/datav20200825T1508')
 
-# What vegetation community are we working with
-vegetation_com <- "FF"
+# What vegetation community are we working with?
+vegetation_com <- "DM" # Options: "FF", "DM", "WM", "MM", "SB", NA
 
 ##############################################################################
 # Static workflow parameters - these are unlikely to change

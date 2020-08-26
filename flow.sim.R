@@ -26,14 +26,14 @@ DirOutBase <- paste0(DirOut,"SIM/")
 
 #### Input options ####
 # The input directory where simulation data is located
-DirIn <- DirOut
+DirIn <- paste0(DirOutBase,"clm_history_files/")
 
 # The name of the netcdf file from the simulation you want to work with
-ncdf_fp <- "clm50bgc_NWT_ff.clm2.h1.2008-2017.nc"
+ncdf_fp <- "clm50bgc_NWT_dm.clm2.h1.2008-2017.nc"
 
 #### Vegetation Community ####
 # Which vegetation community is this simulation for?
-veg_com <- "FF" # Options: "FF", "DM", "WM", "MM", "SB", NA
+veg_com <- "DM" # Options: "FF", "DM", "WM", "MM", "SB", NA
 
 ##############################################################################
 # Static workflow parameters - these are unlikely to change
@@ -357,9 +357,10 @@ write.table(unitlist,
             file = paste0(DirOut, "/Unit_Definitions_", title, ".txt"),
             col.names = TRUE, row.names = FALSE, sep = "\t")
 
-
-print('script complete')
 # #####################################################################################
 # model data have been processed for plotting & comparison with observations
 # Move onto the `Obs_sim_comp_plots.R` script
 # #####################################################################################
+
+print('script complete')
+
