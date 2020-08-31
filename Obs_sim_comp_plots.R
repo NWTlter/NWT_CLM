@@ -50,7 +50,7 @@ vegetation_com <- "DM" # Options: "FF", "DM", "WM", "MM", "SB", NA
 ##############################################################################
 DirOut <- paste0(DirOutBase, sim_name)
 #Check if directory exists and create if not
-if(!dir.exists(DirOutBase)) dir.create(DirOut, recursive = TRUE)
+if(!dir.exists(DirOut)) dir.create(DirOut, recursive = TRUE)
 
 # simulation file list
 sim_file_list <- list.files(DirSimIn, full.names = TRUE)
@@ -175,6 +175,9 @@ ggplot(daily.plot, aes(x = dummydate)) +
   scale_fill_manual(values = c("black", "firebrick")) +
   theme_bw()
 
+
+ggsave(paste0(DirOut, "/meanAnnualCycle_",vegetation_com,".png") )
+  
 ##############################################################################
 # Load in snow depth data
 ##############################################################################

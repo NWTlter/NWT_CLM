@@ -29,11 +29,11 @@ DirOutBase <- paste0(DirOut,"SIM/")
 DirIn <- paste0(DirOutBase,"clm_history_files/")
 
 # The name of the netcdf file from the simulation you want to work with
-ncdf_fp <- "clm50bgc_NWT_dm.clm2.h1.2008-2017.nc"
+ncdf_fp <- "clm50bgc_NWT_sb.clm2.h1.2008-2017.nc"
 
 #### Vegetation Community ####
 # Which vegetation community is this simulation for?
-veg_com <- "DM" # Options: "FF", "DM", "WM", "MM", "SB", NA
+veg_com <- "SB" # Options: "FF", "DM", "WM", "MM", "SB", NA
 
 ##############################################################################
 # Static workflow parameters - these are unlikely to change
