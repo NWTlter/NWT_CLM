@@ -1,3 +1,4 @@
+rm(list = ls())
 
 ##############################################################################
 # Dependencies
@@ -15,9 +16,6 @@ lapply(packReq, function(x) {
     library(x, character.only = TRUE)
   }})
 
-#Install packages from github repos
-# devtools::install_github(c("NEONScience/eddy4R/pack/eddy4R.base", "NEONScience/NEON-utilities/neonUtilities"))
-# 
 #Setup Environment
 options(stringsAsFactors = F)
 
@@ -27,33 +25,39 @@ options(stringsAsFactors = F)
 
 #### Output Options ####
 
+# Base directory for all files
+DirBase <- "~/Desktop/Working_files/Niwot/CLM/"
 # Base directory for output
-DirOutBase <- paste0("~/Downloads/OBS_SIM_COMP/")
+DirOutBase <- paste0(DirBase,"OBS_SIM_COMP/")
 
 # Simulation Name (for organizing output and naming)
-sim_name <- "2000datm_CLM50bgc_nwt_DM.clm2.h0.2008-01-01-00000"
+
+sim_name <- "clm50bgc_NWT_dm.clm2.h1.2008-2017"
 
 #### Input options ####
 # Simulation data directory (output from flow.sim.R script)
-DirSimIn = "~/Downloads/SIM/data/2000datm_CLM50bgc_nwt_DM.clm2.h0.2008-01-01-00000"
+DirSimIn = paste0(DirBase,'SIM/',sim_name)
 
 # Observation data directory (output from flow.obs.R script)
-DirObsIn = "~/Downloads/OBS/data"
+# Maybe this should be renamed to facilitate analyses?
+DirObsIn = paste0(DirBase,'OBS/datav20200825T1508')
 
-# What vegetation community are we working with
-vegetation_com <- "FF"
+# What vegetation community are we working with?
+vegetation_com <- "DM" # Options: "FF", "DM", "WM", "MM", "SB", NA
+
 ##############################################################################
 # Static workflow parameters - these are unlikely to change
 ##############################################################################
 DirOut <- paste0(DirOutBase, sim_name)
 #Check if directory exists and create if not
-if(!dir.exists(DirOutBase)) dir.create(DirOut, recursive = TRUE)
+if(!dir.exists(DirOut)) dir.create(DirOut, recursive = TRUE)
 
 # simulation file list
 sim_file_list <- list.files(DirSimIn, full.names = TRUE)
 
 # observation file list
 obs_file_list <- list.files(DirObsIn, full.names = TRUE)
+
 ##############################################################################
 # Load in flux data
 ##############################################################################
@@ -178,7 +182,6 @@ soil_moisture_plot <- ggplot(daily.plot, aes(x = dummydate)) +
 ggsave(soil_moisture_plot, 
        file = paste0(DirOut, "/soil_comp_plot.png"))
 
-
 ##############################################################################
 # Load in unsummarized snow depth data
 ##############################################################################
@@ -206,5 +209,7 @@ snow_depth.obs %>% names()
 
 snw_dpth.clm <- snw_dpth.clm %>% 
   select(DoY, ObsSim, veg_com, contains("SOI"), contains("GPP")) 
+
+ggsave(paste0(DirOut, "/meanAnnualCycle_",vegetation_com,".png") )
 
 

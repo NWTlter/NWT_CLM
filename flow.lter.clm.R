@@ -31,9 +31,6 @@ lapply(packReq, function(x) {
     library(x, character.only = TRUE)
   }})
 
-#Install packages from github repos
-# devtools::install_github(c("NEONScience/eddy4R/pack/eddy4R.base", "NEONScience/NEON-utilities/neonUtilities"))
-# 
 #Setup Environment
 options(stringsAsFactors = F)
 
@@ -47,12 +44,15 @@ makeplots <- TRUE # FALSE
 #### Output Options ####
 # The version data for the FP standard conversion processing
 ver <- paste0("v",format(Sys.time(), "%Y%m%dT%H%m"))
+
+# Base directory for all files
+DirBase <- "~/Desktop/Working_files/Niwot/"
 # Base directory for output
-DirOutBase <- paste0("~/Downloads/CLM/data",ver)
+DirOutBase <- paste0(DirBase,"CLM/data",ver)
 
 #### Download and input options ####
 # Directory to download precipitation and radidation data to
-DirDnld = "~/Downloads/lter_flux"
+DirDnld = paste0(DirBase,"lter_flux")
 
 # Should a newer version of precip data be automatically 
 # downloaded if one is available?
@@ -62,7 +62,7 @@ getNewData = TRUE
 # to create an account, visit the Ameriflux website: https://ameriflux.lbl.gov/
 # Please also read their data-use policy, by downloading their data you are agreeing 
 # to follow it. The policy can be found here: https://ameriflux.lbl.gov/data/data-policy/
-amf_usr <- "your_username" # CHANGE ME
+amf_usr <- "wwieder" # CHANGE ME
 
 #### Tower Use Options ####
 # What tvan tower should be used?
@@ -102,9 +102,9 @@ basetower <- "East" # West
 # | DoY         | The day of year (1-365/366)      | -              | No        |
 # | Hour        | Decimal hour of the day (0.5-24) | -              | No        |
 # The location of the east tvan data filepath, use "", if tower = "West"
-east_data_fp <- "~/Downloads/Tvan_out_new/processed_data/supp_filtering/tvan_East_2007-05-10_00-30-00_to_2020-08-11_flux_P_reddyproc_suppproc.txt"
-# The location of the east tvan data filepath, use "", if tower = "East"
-west_data_fp <- "~/Downloads/Tvan_out_new/processed_data/supp_filtering/tvan_West_2007-05-10_00-30-00_to_2020-08-11_flux_P_reddyproc_suppproc.txt"
+east_data_fp <- "~/Desktop/Working_files/Niwot/Tvan_out_new/Reddy_proc_readyData/supp_filtering/tvan_East_2007-05-10_00-30-00_to_2020-08-11_flux_P_reddyproc_cleaned.txt"
+# The location of the west tvan data filepath, use "", if tower = "East"
+west_data_fp <- "~/Desktop/Working_files/Niwot/Tvan_out_new/Reddy_proc_readyData/supp_filtering/tvan_West_2007-05-10_00-30-00_to_2020-08-11_flux_P_reddyproc_cleaned.txt"
 
 #### Simulated Runoff Option ####
 # WARNING THIS FEATURE IS UNTESTED; CHANGE AT YOUR OWN RISK
@@ -115,8 +115,11 @@ west_data_fp <- "~/Downloads/Tvan_out_new/processed_data/supp_filtering/tvan_Wes
 # simulation. If provided, this data will be added to the Wet meadow 
 # precipitation. If not provided, wet meadow precipitation will be 75% of 
 # observed precipitation.
+# As done in Wieder et al. 2017, JGR-B. doi:10.1002/2016JG003704.
+
 # Provide a character string specifying the location of the simulated runoff data
 simulated_runoff_fp <- NA # if NA, no simulated runoff will be used
+
 ##############################################################################
 # Static workflow parameters - these are unlikely to change
 ##############################################################################
@@ -474,7 +477,7 @@ download_amflx <- function(dest_dir, username,
   
   # Testing
   # site <- "US-NR1"
-  # username <- "hehollan"
+  # username <- amf_usr
   # dest_dir <- "~/Downloads/lter_flux/rad2"
   
   writeLines("Connecting with Ameriflux endpoint...")
@@ -756,23 +759,18 @@ Tvan_flag_mo <- rep(NA, ndays)
 Tvan_date    <- USCRN_precip$date # MST date
 Tvan_hour    <- USCRN_precip$decimalTime_LST # MST hour
 start        <- 1	
-#options(digits = 7)
-for (d in 1:ndays) { #3) {
-  end <- start + 47
-  
+
+# code below does the following:
   # (0) if no daily precip at Tvan, add zeros to half hourly results 
-  # (1) if precip at Tvan, but not recorded @ CRNS, distribute evenly in day and add 1
-  #     the flag
+  # (1) if precip at Tvan, but not recorded @ CRNS, distribute evenly in day and add 1 the flag
   # (2) if both precip at Tvan and CRNS, distribute Tvan in same proportion as CRNS 
-  # Debugging
-  # print(paste0("Day ", d))
-  # print(paste0(saddle_precip$date[d], " is the date."))
-  # print(paste0(USCRN_precip[start,"date"]," is the USCRN date."))
+
+for (d in 1:ndays) {
+  end <- start + 47
   
   if (Tvan_ppt[d] == 0) {
     Tvan_fine[start:end] <- 0
     Tvan_note[start:end] <- 0
-    #        Tvan_flag[d]         <- 0
   } else if (CRNS_d[d] == 0){
     Tvan_fine[start:end] <- Tvan_ppt[d] / 48		
     Tvan_note[start:end] <- 1
@@ -782,13 +780,9 @@ for (d in 1:ndays) { #3) {
     temp_frac <- CRNS_ppt[start:end] / CRNS_d[d]
     Tvan_fine[start:end] <- Tvan_ppt[d] * temp_frac
     Tvan_note[start:end] <- 2
-    #        Tvan_flag[d]         <- 0
   }
-  # Debugging
-  # print(paste0("Day = ", d, " start = ", start, " end = ", end))
-  # print(paste0(sum(Tvan_fine[start:end], na.rm = TRUE), " mm divided among times."))
-  # print(paste0(Tvan_ppt[d], " mm allocated."))
-   if (round(sum(Tvan_fine[start:end], na.rm = TRUE), digits = 7) != 
+
+  if (round(sum(Tvan_fine[start:end], na.rm = TRUE), digits = 7) != 
       round(sum(Tvan_ppt[d], na.rm = TRUE), digits = 7)) {
      warning(paste0("Running precip totals don't match at day ", d))
    }
@@ -796,6 +790,7 @@ for (d in 1:ndays) { #3) {
   
   start <- end + 1
 }
+
 # Check that the total precip that fell at the saddle is the same as the total precip
 # when allocated over 30-minute time steps
 if (sum(Tvan_fine) == sum(Tvan_ppt)) {
@@ -840,7 +835,7 @@ hlf_hr_precip <- data.frame(PRECTmms = PRECTmms, # mm/s
 ##############################################################################
 writeLines("Downloading Ameriflux radiation data...")
 rad_data_fp <- download_amflx(dest_dir = paste0(DirDnld, "/rad_data"),
-                            username = "hehollan", verbose = TRUE)
+                            username = amf_usr, verbose = TRUE)
 
 # Check if the files have already been unzipped, if not, unzip the zip file
 for (i in seq_along(rad_data_fp)) {
@@ -946,6 +941,7 @@ if (tower == "West" | tower == "Both") {
                                   format = "%Y-%m-%d %H:%M:%OS",
                                   tz = "MST") + 3600*Hour) 
 }
+
 # Join the flux data to the posix_complete date sequence
 if (tower == "Both") {
   tmp_east <- left_join(posix_complete, tvan_east_tms, by = "timestamp") %>%
@@ -1227,6 +1223,7 @@ if (makeplots == TRUE) {
          dpi = 150)
   
 }
+
 ##############################################################################
 # Gap-fill West tower with East tower 
 ##############################################################################
@@ -1404,6 +1401,7 @@ if (tower == "Both") {
     )
   writeLines(paste0("Flagged data can be found here: ", flagged_fp))
 }
+
 ##############################################################################
 # Prepare file for ReddyProc
 ##############################################################################
@@ -1502,7 +1500,7 @@ EddyProc.C <- sEddyProc$new(twr, EddyDataWithPosix.F,
 EddyProc.C$sSetLocationInfo(LatDeg = latSite, LongDeg = lonSite, TimeZoneHour = -6)
 
 #+++ Fill gaps in variables with MDS gap filling algorithm (without prior ustar filtering)
-#EddyProc.C$sMDSGapFill('NEE', FillAll=TRUE) #Fill all values to estimate flux uncertainties
+# Note, this also takes a long time to complete!
 EddyProc.C$sMDSGapFill('NEE', FillAll = TRUE) #Fill all values to estimate flux uncertainties
 EddyProc.C$sMDSGapFill('LE', FillAll = TRUE)
 EddyProc.C$sMDSGapFill('H', FillAll = TRUE)
@@ -1744,22 +1742,6 @@ precip_mods_fp <- paste0(DirOut, "/", "tvan_forcing_data_precip_mods_",
                      '_',lubridate::date(end_date),".txt")
 
 # ADD UNITS
-# NEE - umolC/m^2s^1
-# LE - W/m^2
-# H - W/m^2
-# Ustar - m/s
-# Tair - K
-# VPD - kPa
-# rH - %
-# U - m/s
-# PRECTmms - mm/s
-# P - Pa
-# FLDS - W/m^2
-# Rg - W/m^2
-# radNet - W/m^2
-# Tsoil - degC
-# GPP - umolC/m^2s^1
-
 dataClm_veg_communities_units <- c("NEE" = "umolm-2s-1", 
                                    "LE" = "Wm-2", 
                                    "H" =  "Wm-2", 
@@ -1783,6 +1765,7 @@ dataClm_veg_communities_units <- c("NEE" = "umolm-2s-1",
                                    "DateTime" = "-",
                                    "yearMon" = "-", 
                                    "ZBOT" = "-")
+
 # Reorder the units to match the order of dataClm_veg_communities
 dataClm_veg_communities_units <- dataClm_veg_communities_units[names(dataClm_veg_communities)]
 dataClm_veg_communities_units.df <- rbind(dataClm_veg_communities_units)
@@ -1979,4 +1962,6 @@ for (i in seq_along(community_list)) {
   write_to_clm(dataClm = dataClm_veg_communities_modelready, 
                veg_community = names(community_list[i]))
 }
+
+print('The met (.nc) forcings for Tvan are ready to be used! Time to run CLM')
 
