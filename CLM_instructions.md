@@ -598,3 +598,22 @@ If you are cloning the case to alter vegetation community settings make sure you
  - [ ] surface dataset files must be correct for the vegetation community
  - [ ] make sure your user_nl_clm is still pointing to the right surface dataset, parameter file, etc. (if you want you can copy the parameter file into the new case directory, but need to point to it in user_nl_clm)
 
+# After your done
+
+The `flow.sim.R` script expects 30 minute data. Concatinating the data into a single file makes this easier.  If you followed the instructions above, the code below will concatinate your *.h1.* files together
+
+```bash
+cd /scratch/$USER/archive/$CASE_NAME/lnd/hist
+module load nco
+ncrcat *.h1.* CASE_NAME.clm2.h1.2008-2017.nc
+```
+
+Then, from a new terminal window, you can scp the file onto your local machine
+
+```bash
+scp $USER@cheyenne.ucar.edu:/glade/scratch/$USER/archive/$CASE_NAME/lnd/hist/$CASE_NAME.clm2.h1.2008-2017.nc .
+```
+
+
+### Now we can finally look at the model and observations using the `flow.obs.R` and `flow.sim.R` scripts
+

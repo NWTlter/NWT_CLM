@@ -27,9 +27,6 @@ lapply(packReq, function(x) {
     library(x, character.only = TRUE)
   }})
 
-#Install packages from github repos
-# devtools::install_github(c("NEONScience/eddy4R/pack/eddy4R.base", "NEONScience/NEON-utilities/neonUtilities"))
-# 
 #Setup Environment
 options(stringsAsFactors = F)
 
@@ -40,22 +37,22 @@ options(stringsAsFactors = F)
 # The version data for the FP standard conversion processing
 ver <- paste0("v",format(Sys.time(), "%Y%m%dT%H%m"))
 # Base directory for output
-DirOutBase <- paste0("~/Downloads/OBS/data",ver)
+DirOutBase <- paste0("~/Desktop/Working_files/Niwot/CLM/OBS/data",ver)
 
 #### Download and input options ####
 # Directory to download observation data to 
-DirDnld = "~/Downloads/lter_obs"
+DirDnld = "~/Desktop/Working_files/Niwot/CLM/OBS/NWT_lter_obs_downloads"
 
 # Should a newer version of EDI data be downloaded if one is available?
 getNewData = TRUE
 
 #### Tvan data location ####
 # Location of the tvan data that was used to create forcing files
-tvan_data_fp <- "~/Downloads/CLM/datav20200816T1808/data/tvan_forcing_data_precip_mods_both_towers_2007-05-11_2020-08-11.txt"
+tvan_data_fp <- "~/Desktop/Working_files/Niwot/CLM/datav20200824T1008/data/tvan_forcing_data_precip_mods_both_towers_2007-05-11_2020-08-11.txt"
 
 # location of tvan data with soil information; Note: Tvan soil temperature data
 # probes from East tower do not work, so please give west tower tvan data location
-tvan_data_soil <- "~/Downloads/Tvan_out_new/filtered_data/tvan_West_2007-05-09_19-00-00_to_2020-08-11_00-30-00_flux_P.csv"
+tvan_data_soil <- "~/Desktop/Working_files/Niwot/Tvan_out_new/filtered_data/tvan_West_2007-05-09_19-00-00_to_2020-08-11_00-30-00_flux_P.csv"
 
 ##############################################################################
 # Static workflow parameters - these are unlikely to change
@@ -940,10 +937,10 @@ write.table(tvan_comb_mod.diurnal_seasonal,
 
 
 # DoY data
-DirOutBase <- "~/Downloads/OBS/datav20200820T2108" 
 write.table(daily_soilmoisttemp_gpp, 
             file = paste0(DirOutBase, "/Daily_soilmoisture_soiltemp_gpp_summaries.txt"),
             row.names = FALSE, sep = "\t")
 
 
 # Annual data
+
