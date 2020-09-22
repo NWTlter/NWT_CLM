@@ -39,14 +39,14 @@ DirOutBase <- paste0("~/Downloads/OBS/data")
 
 #### Download and input options ####
 # Directory to download observation data to 
-DirDnld = "~/Desktop/Working_files/Niwot/CLM/OBS/NWT_lter_obs_downloads"
+DirDnld = "~/Downloads/CLM/OBS/NWT_lter_obs_downloads"
 
 # Should a newer version of EDI data be downloaded if one is available?
 getNewData = TRUE
 
 #### Tvan data location ####
 # Location of the tvan data that was used to create forcing files
-tvan_data_fp <- "~/Desktop/Working_files/Niwot/CLM/datav20200824T1008/data/tvan_forcing_data_precip_mods_both_towers_2007-05-11_2020-08-11.txt"
+tvan_data_fp <- "~/Downloads/CLM/datav20200816T1808/data/tvan_forcing_data_precip_mods_both_towers_2007-05-11_2020-08-11.txt"
 
 # location of tvan data with soil information; Note: Tvan soil temperature data
 # probes from East tower do not work, so please give west tower tvan data location
@@ -92,11 +92,11 @@ getCurrentVersion <- function(edi_id){
 #function to download the EML file from EDI
 getEML <- function(packageid){
   require(magrittr)
-  myurl <- paste0("https://portal.lternet.edu/nis/metadataviewer?packageid=",
+  myurl <- paste0("https://portal.edirepository.org/nis/metadataviewer?packageid=",
                   packageid,
                   "&contentType=application/xml")
   #myeml<-xml2::download_html(myurl)%>%xml2::read_xml()%>%EML::read_eml()
-  myeml <- xml2::read_xml(paste0("https://portal.lternet.edu/nis/metadataviewer?packageid=",
+  myeml <- xml2::read_xml(paste0("https://portal.edirepository.org/nis/metadataviewer?packageid=",
                                  packageid,
                                  "&contentType=application/xml")) %>% EML::read_eml()
 }
@@ -703,7 +703,7 @@ sad_snw_mod <- sad_snw %>%
   mutate(veg_class = ifelse(is.na(veg_com), "not available", veg_com)) %>%
   filter(!(veg_com == "not available")) %>%
   filter(veg_com %in% c("DM", "FF", "MM", "SB", "WM")) %>%
-  mutate(snow_depth = mean_depth/100,
+  mutate(snow_depth = mean_depth,
          date = as.Date(date, format = "%Y-%m-%d"),
          DoY = lubridate::yday(date),
          Year = lubridate::year(date)) %>%
