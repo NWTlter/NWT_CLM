@@ -220,7 +220,8 @@ summarize_vars_by_time <- function(var, unitlist, ncdata, veg_com = NA) {
            year = as.factor(lubridate::year(date)),
            DoY = lubridate::yday(date)) %>%
     # Move time back 30 minutes since timestamp seems to be off
-    mutate(Hour = Hour - 0.5) %>%
+    mutate(Hour = Hour - 0.5,
+           Hour = ifelse(Hour == -0.5, 23.5, Hour)) %>%
     select(mcsec, mcdate, timestamp, date, timestamp_UTC, date_UTC, year, month,
            DoY, Hour, all_of(var)) %>%
     mutate(ObsSim = "Sim") %>%
