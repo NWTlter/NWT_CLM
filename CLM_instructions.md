@@ -598,9 +598,9 @@ If you are cloning the case to alter vegetation community settings make sure you
  - [ ] surface dataset files must be correct for the vegetation community
  - [ ] make sure your user_nl_clm is still pointing to the right surface dataset, parameter file, etc. (if you want you can copy the parameter file into the new case directory, but need to point to it in user_nl_clm)
 
-# After your done
+# After you're done
 
-The `flow.sim.R` script expects 30 minute data. Concatinating the data into a single file makes this easier.  If you followed the instructions above, the code below will concatinate your *.h1.* files together
+The `flow.sim.R` script expects 30 minute data. Concatenating the data into a single file makes this easier.  If you followed the instructions above, the code below will concatenate your *.h1.* files together
 
 ```bash
 cd /scratch/$USER/archive/$CASE_NAME/lnd/hist
