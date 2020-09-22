@@ -91,17 +91,15 @@ mean_ann_sum_vars <- c("GPP", "NPP", "ET", "TOTVEGC")
 # Helper functions - for downloading and loading data
 ################################################################################
 #---------------read in CLM variables----------------------------------
-extract_CLM_vars <- function(infile, nsteps, vars) {
+extract_CLM_vars <- function(infile, vars) {
   # Extract variables from netcdf history files
   # file = filepath to netcdf file
-  # nsteps = how many 30minute timesteps worth of data are there?
   # vars = the variables to extract from the netcdf file
   require(ncdf4)
 
   Data.clm <- nc_open(infile) 
   # should this not be hard coded?  I'm not sure what it does later on, but it's burried in the code now?
   
-  nsteps   <- 60 #48 * (365*5 + 2) #48 * (365*6 + 2)
   print(paste("The file has",Data.clm$nvars,"variables"))
   print(paste("The variables are:"))
   print(paste(names(Data.clm$var)))
