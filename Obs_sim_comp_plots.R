@@ -26,7 +26,7 @@ options(stringsAsFactors = F)
 #### Output Options ####
 
 # Base directory for all files
-DirBase <- "~/Desktop/Working_files/Niwot/CLM/"
+DirBase <- "~/Downloads/"
 # Base directory for output
 DirOutBase <- paste0(DirBase,"OBS_SIM_COMP/")
 
@@ -39,8 +39,7 @@ sim_name <- "clm50bgc_NWT_dm.clm2.h1.2008-2017"
 DirSimIn = paste0(DirBase,'SIM/',sim_name)
 
 # Observation data directory (output from flow.obs.R script)
-# Maybe this should be renamed to facilitate analyses?
-DirObsIn = paste0(DirBase,'OBS/datav20200825T1508')
+DirObsIn = paste0(DirBase,'OBS/data')
 
 # What vegetation community are we working with?
 vegetation_com <- "DM" # Options: "FF", "DM", "WM", "MM", "SB", NA
@@ -195,7 +194,9 @@ snow_depth.clm <- all.clm %>%
   select(date, SNOW_DEPTH, veg_com, ObsSim) %>%
   group_by(date) %>%
   mutate(avg_snwdp = mean(SNOW_DEPTH, na.rm = TRUE),
-         sd_snwdp = sd(SNOW_DEPTH, na.rm = TRUE))
+         sd_snwdp = sd(SNOW_DEPTH, na.rm = TRUE)) %>%
+  select(-SNOW_DEPTH) %>%
+  unique()
 
 # Load in observations
 snwdp_obs_file <- grep("snow_depth", obs_file_list)
@@ -203,13 +204,47 @@ snwdp_obs_file <- grep("snow_depth", obs_file_list)
 snow_depth.obs <- read.table(file = obs_file_list[snwdp_obs_file],
            sep = "\t", header = TRUE)
 
-snow_depth.obs %>% names()
-  rename()
+
+# Rename observational data columns to match clm data columns, 
+# filter by vegetation community
+snow_depth.obs <- snow_depth.obs %>% 
+  rename(avg_snwdp = avg_date_depth,
+         sd_snwdp = sd_date_depth) %>%
+  mutate(ObsSim = "Obs") %>%
+  filter(veg_com == vegetation_com) %>%
+  select(-DoY, -data_information, -Year)
 
 
-snw_dpth.clm <- snw_dpth.clm %>% 
-  select(DoY, ObsSim, veg_com, contains("SOI"), contains("GPP")) 
+# Combine observation and sim data sets
+names(snow_depth.obs)
+names(snow_depth.clm)
 
-ggsave(paste0(DirOut, "/meanAnnualCycle_",vegetation_com,".png") )
+
+snow_depth.plot <- bind_rows(snow_depth.clm, snow_depth.obs) %>%
+  mutate(ymax = avg_snwdp + sd_snwdp,
+         ymin = avg_snwdp - sd_snwdp)
+
+
+snow_depth_plot <- ggplot(snow_depth.plot %>%
+         # add a very small number since geom ribbon can't handle widths of 0
+         mutate(sd_snwdp = ifelse(sd_snwdp == 0, 0.000000000001, sd_snwdp)),
+       aes(x = as.Date(date))) +
+  geom_ribbon(aes(ymin = (avg_snwdp - sd_snwdp),
+                  ymax = (avg_snwdp + sd_snwdp), 
+                  group = ObsSim,
+                  fill = ObsSim), alpha = 0.4) +
+  geom_line(aes(y = avg_snwdp,
+                group = ObsSim,
+                color = ObsSim)) +
+  scale_x_date(date_labels = "%Y", date_breaks = "1 year") +
+  scale_color_manual(values = c("black", "firebrick")) +
+  scale_fill_manual(values = c("black", "firebrick")) +
+  theme_bw() +
+  xlab("Day of Year") + ylab("Snow Depth (cm)") +
+  ggtitle(paste0("Snow depth for ", vegetation_com, " community"))
+  
+
+ggsave(snow_depth_plot, 
+       file = paste0(DirOut, "/snow_depth_plot.png"))
 
 
