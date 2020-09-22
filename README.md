@@ -206,10 +206,10 @@ This script outputs three files, the Diurnal-seasonal, daily, and yearly summari
 
 # Format model output
 ### 5. `flow.sim.R`
-The goal of this script is to read in netcdf output data from a CLM model simulation and convert it into tab-delimited files that can be compared to observational data. The data produced is half-hourly but is also summarized at three levels: Diurnal by season, daily (day of year), and annually. Depending on the vegetation community that is specified by the user, a different level of soil will be used for the upper layer of soil moisture and soil temperature data. This is because Tvan soil data is collected at 10cm while the saddle sensor network soil data is collected at 5cm. 
+The goal of this script is to read in netcdf output data from a CLM model simulation and convert it into tab-delimited files that can be compared to observational data. The data produced is half-hourly but is also summarized at three levels: Diurnal by season, daily (day of year), and annually. Depending on the vegetation community a different level of soil will be used for the upper layer of soil moisture and soil temperature data. This is because Tvan soil data is collected at 10cm while the saddle sensor network soil data is collected at 5cm. 
 
 #### Inputs
- - A netcdf file from a transient CLM point simulation at Niwot Ridge (following instructions in `CLM_instructions.md`); The netcdf should have a descriptive name (this is the name that will be used for the output). The netcdf file should be half-hourly output and at a minimum contain the following history fields:
+ - At least one netcdf file from a transient CLM point simulation at Niwot Ridge (following instructions in `CLM_instructions.md`); The netcdf file should be half-hourly output and at a minimum contain the following history fields:
  
  | Field Name  | Description                                                | Units    |
  | ----------- | ---------------------------------------------------------- | -------- |
@@ -231,18 +231,23 @@ The goal of this script is to read in netcdf output data from a CLM model simula
 #### User Options
 
  - `DirOutBase` - Base directory for script output
+ - `case_name` - The case name of the simulation, this is used for creating subdirectories to hold the output data
  - `DirIn` - The input directory where simulation data is located
- - `ncdf_fp` - The name of the netcdf file from the simulation you want to work with
- - `veg_com`  The vegetation community of the simulation. Options: "FF", "DM", "WM", "MM", "SB", NA; This will determine which layer of soil moisture is used. 
+ - `[veg_com]_ncdf_fp` - The name of the netcdf file from each vegetation community ("FF", "DM", "WM", "MM", and "SB"). If you don't have a netcdf for a particular community or don't want to specify it, set the file name to `""`.
+ - `usr_var` - option to export extra variables that the user can choose to select from the netcdf files. Note, if the user wants mean annual summaries of ELAI or TOTVEGC, they must be specified here since they are not included in the default variables above. 
 
 #### Outputs
 
-A folder in the base output directory named after the netcdf file basename with:
+A folder in the base output directory named after the case_name with:
  1. Diurnal-seasonal data: all chosen variables averaged by hour of the day across years by season
  2. Daily Data: Daily (day-of-year) means and standard deviations of all chosen variables.
  3. Annual data: Annual means and standard deviations of all variables
  4. Unsummarized data: all chosen variables at all timestamps during the simulation
  5. Unit definitions: Units for each of the variables that are written out.
+ 6. Mean_annaual_summaries_vars: mean annual summaries of several variables ("GPP", "NPP", "ET", "TOTVEGC") specified in the static workflow parameters. NOTE: if ET or TOTVEGC are not specified by the user in `usr_var` they will not be summarized since they are not included in the default variable list.  
+ 7. Max_elai_summary: a summary by vegetation community of the max elai per year and averaged over all years.
+
+Note: For outputs 1-4, data from all available vegetation communities are concatenated and saved to a single file.
 
 [top](#nwt_clm)
 

@@ -19,33 +19,72 @@ lapply(packReq, function(x) {
 # Workflow parameters
 ##############################################################################
 #### Output Options ####
-DirOut <- paste0("~/Desktop/Working_files/Niwot/CLM/")
+DirOut <- paste0("~/Downloads/")
 
 # Base directory for output, to conform with plotting script
 DirOutBase <- paste0(DirOut,"SIM/")
+
+# Case name of the simulation to create an output subdirectory (optional), if you don't want
+# to specify a case name, set equal to ""
+# This is useful if you are running many cases
+case_name <- "clm50bgc_NWT"
 
 #### Input options ####
 # The input directory where simulation data is located
 DirIn <- paste0(DirOutBase,"clm_history_files/")
 
-# The name of the netcdf file from the simulation you want to work with
-ncdf_fp <- "clm50bgc_NWT_sb.clm2.h1.2008-2017.nc"
+# The names of the netcdf files from each simulation you want to work with.
+# If you don't have a netcdf for a particular vegetation community, leave
+# the file path blank.
+ff_ncdf_fp <- "clm50bgc_NWT_ff.clm2.h1.2008-2017.nc" # fell field
+dm_ncdf_fp <- "clm50bgc_NWT_dm.clm2.h1.2008-2017.nc" # dry meadow
+wm_ncdf_fp <- "" # wet meadow
+mm_ncdf_fp <- "" # moist meadow
+sb_ncdf_fp <- "" # snow bed
 
-#### Vegetation Community ####
-# Which vegetation community is this simulation for?
-veg_com <- "SB" # Options: "FF", "DM", "WM", "MM", "SB", NA
+#### Extra Variable Choice ####
+# The names of any optional extra variables the user would like to extract
+# WARNING: No conversions are made to the units of user-specified optional 
+# variables
+# 
+# Variables that are extracted by default are:
+#      "FSH", # sensible heat flux (W/m^2)
+#      "T10", # temperature at 2m (C)
+#      "RNET", # net radiation FSA-FIRA (W/m^2)
+#      "TSOI_2", # Soil temperature (2nd layer; 4cm, 2-6cm layer) (C)
+#      "TSOI_3", # Soil temperature (3rd layer; 9cm, 6-12cm layer) (C)
+#      "TSOI_5", # Soil temperature (5th layer; 26cm, 20-32cm layer) (C)
+#      "H2OSOI_2", # volumetric soil moisture (2nd layer; 4cm, 2-6cm layer) (mm/mm)
+#      "H2OSOI_3", # volumetric soil moisture (3rd layer; 9cm, 6-12cm layer) (mm/mm),
+#      "H2OSOI_5", # volumetric soil moisture (5th layer; 26cm, 20-32cm layer) (mm/mm)
+#      "SNOW_DEPTH", # snow height of snow covered area (cm)
+#      "EFLX_LH_TOT", # total latent heat flux [+ to atm], (W/m^2)
+#      "GPP", # Gross primary production (gC/m^2/s)
+#      "AGNPP", # Aboveground net primary productivity (gC/m^2/s)
+#      "NPP" # Net primary production(gC/m^2/s))
+usr_var <- c("ELAI", "TOTVEGC")
 
 ##############################################################################
 # Static workflow parameters - these are unlikely to change
 ##############################################################################
-# Extract a title from netcdf name
-title <- sub("\\.nc$","", basename(ncdf_fp))
+# Create a list of netcdfs for each vegetation community
+veg_coms_names <- c("FF", "DM", "WM", "MM", "SB")
 
-# Output subdirector is the DirOutBase + the title of the netcdf
-DirOut <- paste0(DirOutBase, title)
-print(DirOut)
+ncdf_fp_list <- list(ff_ncdf_fp, dm_ncdf_fp, wm_ncdf_fp, mm_ncdf_fp, sb_ncdf_fp)
+
+names(ncdf_fp_list) <- veg_coms_names
+
+# Remove members of list without simulations
+ncdf_fp_list <- ncdf_fp_list[ncdf_fp_list != ""]
+
+# Output subdirector is the DirOutBase + the case_name
+DirOut <- paste0(DirOutBase, case_name)
+
 # Create output directory if it doesn't exist
 if (!dir.exists(DirOut)) dir.create(DirOut, recursive = TRUE)
+
+# Variables to summarize with mean annual summaries
+mean_ann_sum_vars <- c("GPP", "NPP", "ET", "TOTVEGC")
 
 
 ################################################################################
@@ -229,103 +268,183 @@ summarize_vars_by_time <- function(var, unitlist, ncdata, veg_com = NA) {
 ################################################################################
 # Extract the CLM variables into an R-friendly format
 ################################################################################
-nc <- extract_CLM_vars(infile = paste0(DirIn, title, ".nc"))
-
-
-# Subset nc data to only include the time step data
-# get list of variables that are not recorded each time step
-run_data_names <-  sapply(nc$data, function(i) length(i) < length(nc$data$nstep))
-run_data <- nc$data[!run_data_names]
-
-# list of variable units
-run_units <-  sapply(names(run_data), function(x) ifelse(nc$units[[x]]$hasatt,
-                                                         nc$units[[x]]$value,
-                                                         NA))
-run_units <- data.frame(t(run_units), stringsAsFactors = FALSE)
-
-# list of variable descriptions
-run_longname <- sapply(names(run_data), function(x) nc$longname[[x]]$value)
-run_longname <- data.frame(t(run_longname), stringsAsFactors = FALSE)
+nc_info_list <- lapply(ncdf_fp_list, function(x) {
+  
+  writeLines(paste0("Extracting data from ", x))
+  nc <- extract_CLM_vars(infile = paste0(DirIn, x))
+  
+  # Subset nc data to only include the time step data
+  # get list of variables that are not recorded each time step
+  run_data_names <-  sapply(nc$data, function(i) length(i) < length(nc$data$nstep))
+  run_data <- nc$data[!run_data_names]
+  
+  # list of variable units
+  run_units <-  sapply(names(run_data), function(x) ifelse(nc$units[[x]]$hasatt,
+                                                           nc$units[[x]]$value,
+                                                           NA))
+  run_units <- data.frame(t(run_units), stringsAsFactors = FALSE)
+  
+  # list of variable descriptions
+  run_longname <- sapply(names(run_data), function(x) nc$longname[[x]]$value)
+  run_longname <- data.frame(t(run_longname), stringsAsFactors = FALSE)
+  
+  nc_info <- list(run_data = run_data, 
+                  run_units = run_units, 
+                  run_longname = run_longname)
+  return(nc_info)
+  }
+  )
 
 ################################################################################
 # Unit conversions
 ################################################################################
-# Convert all Kelvin temperatures to Celsius
-# find variables with "temperature" in the longname, then subset those to variables
-# with units of K
-temperature_vars <- grep("temperature", run_longname) 
-temperature_vars <- temperature_vars[grepl("K", run_units[temperature_vars])]
-
-writeLines("Converting Kelvin variables to Celsius")
-for (i in seq_along(temperature_vars)) {
-  #print(run_longname[temperature_vars[i]])
-  #print(run_units[temperature_vars[i]])
-  run_data[[temperature_vars[i]]] <- run_data[[temperature_vars[i]]] - 273.15
-  run_units[temperature_vars[i]] <- "C"
-}
-
-# Convert all snow depth into cm
-writeLines("Converting SNOW_DEPTH from m to cm")
-run_data[["SNOW_DEPTH"]] <- run_data[["SNOW_DEPTH"]] * 100 # from m to cm
-run_units["SNOW_DEPTH"] <- "cm"
-
-# Convert soil moisture into percent
-soilmoist_vars <- grep("H2OSOI", names(run_longname))
-
-writeLines("Converting soil moisture from ratio to %")
-for (i in seq_along(soilmoist_vars)) {
-  run_data[[soilmoist_vars[i]]] <- run_data[[soilmoist_vars[i]]] * 100
-  run_units[soilmoist_vars[i]] <- "% mm/mm"
-}
+nc_info_list <- lapply(nc_info_list, function(x) {
+  # Convert all Kelvin temperatures to Celsius
+  # find variables with "temperature" in the longname, then subset those to variables
+  # with units of K
+  temperature_vars <- grep("temperature", x$run_longname) 
+  temperature_vars <- temperature_vars[grepl("K", x$run_units[temperature_vars])]
+  
+  writeLines("Converting Kelvin variables to Celsius")
+  for (i in seq_along(temperature_vars)) {
+    #print(x$run_longname[temperature_vars[i]])
+    #print(x$run_units[temperature_vars[i]])
+    x$run_data[[temperature_vars[i]]] <- x$run_data[[temperature_vars[i]]] - 273.15
+    x$run_units[temperature_vars[i]] <- "C"
+  }
+  
+  # Convert all snow depth into cm
+  writeLines("Converting SNOW_DEPTH from m to cm")
+  x$run_data[["SNOW_DEPTH"]] <- x$run_data[["SNOW_DEPTH"]] * 100 # from m to cm
+  x$run_units["SNOW_DEPTH"] <- "cm"
+  
+  # Convert soil moisture into percent
+  soilmoist_vars <- grep("H2OSOI", names(x$run_longname))
+  
+  writeLines("Converting soil moisture from ratio to %")
+  for (i in seq_along(soilmoist_vars)) {
+    x$run_data[[soilmoist_vars[i]]] <- x$run_data[[soilmoist_vars[i]]] * 100
+    x$run_units[soilmoist_vars[i]] <- "% mm/mm"
+  }
+  return(x)
+  })
 
 ################################################################################
 # Summarize clm variables at different time chunks (i.e. diurnally, hourly etc.)
 ################################################################################
-writeLines(paste0("Selecting variables to compare to obs and creating diurnal, ",
-                  "daily, and annual summaries of them"))
+nc_format_list <- lapply(names(nc_info_list), function(x, opt_var = usr_var) {
+  writeLines(paste0("For each vegetation community we are selecting variables to compare to obs",
+                    "and creating diurnal, daily, and annual summaries of them"))
+  # Set up veg_com variable based on list name
+  veg_com <- x
+  
+  # Set up nc_info object
+  nc_info <- nc_info_list[[x]]
+  
+  
+  # Select variables to pull from model if missing above
+  var <- c("FSH", # sensible heat flux (W/m^2)
+           "T10", # temperature at 2m (C)
+           "RNET", # net radiation FSA-FIRA (W/m^2)
+           "TSOI_2", # Soil temperature (2nd layer; 4cm, 2-6cm layer) (C)
+           "TSOI_3", # Soil temperature (3rd layer; 9cm, 6-12cm layer) (C)
+           "TSOI_5", # Soil temperature (5th layer; 26cm, 20-32cm layer) (C)
+           "H2OSOI_2", # volumetric soil moisture (2nd layer; 4cm, 2-6cm layer) (mm/mm)
+           "H2OSOI_3", # volumetric soil moisture (3rd layer; 9cm, 6-12cm layer) (mm/mm),
+           "H2OSOI_5", # volumetric soil moisture (5th layer; 26cm, 20-32cm layer) (mm/mm)
+           "SNOW_DEPTH", # snow height of snow covered area (cm)
+           "EFLX_LH_TOT", # total latent heat flux [+ to atm], (W/m^2)
+           "GPP", # Gross primary production (gC/m^2/s)
+           "AGNPP", # Aboveground net primary productivity (gC/m^2/s)
+           "NPP") # Net primary production(gC/m^2/s))
+  
+  # add any user-specified optional variables that are not already in var
+  var <- c(var, opt_var[!(opt_var %in% var)])
+  
+  
+  # Select the appropriate soil layers for comparison
+  if (veg_com == "FF") {
+    var <- var[!grepl("SOI.{1,}2", var)] # FF is measured at 10cm depth (drop unused variables)
+  } else {
+    var <- var[!grepl("SOI.{1,}3", var)] # all other communities measured at 5cm (drop unused variables)
+  }
+  
+  
+  # get the units associated with the variables
+  unitlist <- nc_info$run_units[var]
 
-# Select variables to pull from model
-var <- c("FSH", # sensible heat flux (W/m^2)
-         "T10", # temperature at 2m (C)
-         "RNET", # net radiation FSA-FIRA (W/m^2)
-         "TSOI_2", # Soil temperature (2nd layer; 4cm, 2-6cm layer) (C)
-         "TSOI_3", # Soil temperature (3rd layer; 9cm, 6-12cm layer) (C)
-         "TSOI_5", # Soil temperature (5th layer; 26cm, 20-32cm layer) (C)
-         "H2OSOI_2", # volumetric soil moisture (2nd layer; 4cm, 2-6cm layer) (mm/mm)
-         "H2OSOI_3", # volumetric soil moisture (3rd layer; 9cm, 6-12cm layer) (mm/mm),
-         "H2OSOI_5", # volumetric soil moisture (5th layer; 26cm, 20-32cm layer) (mm/mm)
-         "SNOW_DEPTH", # snow height of snow covered area (cm)
-         "EFLX_LH_TOT", # total latent heat flux [+ to atm], (W/m^2)
-         "GPP", # Gross primary production (gC/m^2/s)
-         "AGNPP", # Aboveground net primary productivity (gC/m^2/s)
-         "NPP") # Net primary production(gC/m^2/s))
+  writeLines("Selected Variables are: ")
+  for (i in seq_along(var)) {
+    variable <- var[i]
+    writeLines(paste0(variable, ": ", nc_info$run_longname[variable], " (",
+                      nc_info$run_units[variable], ")"))
+  }
 
-# Select the appropriate soil layers for comparison
-if (veg_com == "FF") {
-  var <- var[!grepl("SOI.{1,}2", var)] # FF is measured at 10cm depth
-} else {
-  var <- var[!grepl("SOI.{1,}3", var)] # all other communities measured at 5cm
-}
+  # Extract the three time summaries of the variables
+  writeLines(paste0("Extracting the three time summaries of the ", veg_com, " data"))
+  nc_format <- summarize_vars_by_time(var = var,
+                                      unitlist = unitlist,
+                                      ncdata = nc_info$run_data,
+                                      veg_com = veg_com)
+  
+  # Change the names of the soil variables to "upper" and "lower" so that FF data can
+  # be combined with all other veg communities later
+  
+  nc_format <- lapply(nc_format, function(x) {
+    names(x) <- sub("_5_", "_lower_", names(x))
+    names(x) <- sub("_3_|_2_", "_upper_", names(x))
+    return(x)
+  })
+  
+  # Add the unitlist to nc_format
+  nc_format$unilist <- unitlist
+  
+  return(nc_format)
+  
+})
 
-
-
-# get the units associated with the variables
-unitlist <- run_units[var]
-
-writeLines("Selected Variables are: ")
-for (i in seq_along(var)) {
-  variable <- var[i]
-  writeLines(paste0(variable, ": ", run_longname[variable], " (",
-                    run_units[variable], ")"))
-}
-
-# Extract the three time summaries of the variables
-nc_format <- summarize_vars_by_time(var = var,
-                       unitlist = unitlist, 
-                       ncdata = run_data,
-                       veg_com = veg_com)
+names(nc_format_list) <- names(nc_info_list)
 
 
+################################################################################
+# Concatenate Vegetation Community data
+################################################################################
+# Create list to hold the concatenated data
+nc_format <- vector(mode = "list", length = 4)
+names(nc_format) <- c("diurnal_seasonal", "daily", "annual", "all_wide")
+
+# Concatenate data
+nc_format$diurnal_seasonal <- do.call(bind_rows, lapply(nc_format_list, function(x) {x$diurnal_seasonal}))
+nc_format$daily <- do.call(bind_rows, lapply(nc_format_list, function(x) {x$daily}))
+nc_format$annual <- do.call(bind_rows, lapply(nc_format_list, function(x) {x$annual}))
+nc_format$all_wide <- do.call(bind_rows, lapply(nc_format_list, function(x) {x$all_wide}))
+
+################################################################################
+# Produce basic summaries of simulation data
+################################################################################
+# Mean annual summaries
+mean_ann_sum <- nc_format$annual %>%
+  group_by(veg_com) %>%
+  select(veg_com, starts_with(mean_ann_sum_vars)) %>%
+  summarize_at(vars(ends_with("_yearavg")), mean, na.rm = TRUE)
+
+write.table(mean_ann_sum, 
+            file = paste0(DirOut, "/Mean_annual_summaries_", paste(mean_ann_sum_vars, collapse = "_"), ".txt"),
+            col.names = TRUE, row.names = FALSE, sep = "\t")
+
+# maximum ELAI summary
+max_elai <- nc_format$all_wide %>%
+  group_by(veg_com, year) %>%
+  select(veg_com, year, starts_with("ELAI")) %>%
+  summarize_at(vars(starts_with("ELAI")), max, na.rm = TRUE) %>%
+  rename(max_ELAI = ELAI) %>%
+  ungroup() %>%
+  group_by(veg_com) %>%
+  mutate(mean_max_ELAI = mean(max_ELAI, na.rm = TRUE))
+
+write.table(max_elai, 
+            file = paste0(DirOut, "/Max_elai_summary.txt"),
+            col.names = TRUE, row.names = FALSE, sep = "\t")
 
 ################################################################################
 # Write out Simulation data
@@ -334,28 +453,30 @@ writeLines("Writing out simulation data")
 
 # Write out diurnal summaries for each season
 write.table(nc_format$diurnal_seasonal, 
-            file = paste0(DirOut, "/Diurnal_seasonal_summaries_", title, ".txt"),
+            file = paste0(DirOut, "/Diurnal_seasonal_summaries.txt"),
             col.names = TRUE, row.names = FALSE, sep = "\t")
 
 # Write out daily summaries for each DoY
 write.table(nc_format$daily, 
-            file = paste0(DirOut, "/Daily_summaries_", title, ".txt"),
+            file = paste0(DirOut, "/Daily_summaries.txt"),
             col.names = TRUE, row.names = FALSE, sep = "\t")
 
 # Write out annual summaries for each year
-write.table(nc_format$daily, 
-            file = paste0(DirOut, "/Annual_summaries_", title, ".txt"),
+write.table(nc_format$annual, 
+            file = paste0(DirOut, "/Annual_summaries.txt"),
             col.names = TRUE, row.names = FALSE, sep = "\t")
 
 # Write out 30-minute data 
 write.table(nc_format$all_wide, 
-            file = paste0(DirOut, "/Unsummarized_30min_", title, ".txt"),
+            file = paste0(DirOut, "/Unsummarized_30min.txt"),
             col.names = TRUE, row.names = FALSE, sep = "\t")
 
-# Write out unit definitions
-write.table(unitlist, 
-            file = paste0(DirOut, "/Unit_Definitions_", title, ".txt"),
-            col.names = TRUE, row.names = FALSE, sep = "\t")
+# Write out unit definitions for each vegetation community (they should all have the same units)
+lapply(veg_coms_names, function(x) {
+  write.table(nc_format_list[[x]]$unitlist, 
+              file = paste0(DirOut, "/Unit_Definitions_", x, ".txt"),
+              col.names = TRUE, row.names = FALSE, sep = "\t")
+} )
 
 # #####################################################################################
 # model data have been processed for plotting & comparison with observations
