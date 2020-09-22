@@ -40,7 +40,7 @@ options(stringsAsFactors = F)
 ##############################################################################
 #### Ploting options ####
 # Should plots be made?
-makeplots <- TRUE
+makeplots <- TRUE # TRUE = default
 
 #### Output Options ####
 # The output directory for the script. It is recommended but not required that this
@@ -57,9 +57,9 @@ tower <- "Both" # Options are "East", "West", or "Both"
 # Only necessary to set the tower that you are processing, or 
 # both, if tower = "Both"
 # The location of the east tvan data filepath, use "", if tower = "West"
-east_data_fp <- "~/Desktop/Working_files/Niwot/Tvan_out_new/processed_data/tvan_East_2007-08-29_09-00-00_to_2020-04-09_18-00-00_flux_P_reddyproc.txt"
+east_data_fp <- "~/Downloads/Tvan_out/Reddy_proc_readyData/tvan_East_2007-08-29_09-00-00_to_2020-04-09_18-00-00_flux_P_reddyproc.txt"
 # The location of the west tvan data filepath, use "", if tower = "East"
-west_data_fp <- "~/Desktop/Working_files/Niwot/Tvan_out_new/processed_data/tvan_West_2007-05-09_19-00-00_to_2020-08-11_00-30-00_flux_P_reddyproc.txt"
+west_data_fp <- "~/Downloads/Tvan_out/Reddy_proc_readyData/tvan_West_2007-05-09_19-00-00_to_2020-08-11_07-30-00_flux_P_reddyproc.txt"
 
 ##############################################################################
 # Static workflow parameters - these are unlikely to change
@@ -374,7 +374,7 @@ if (tower == "East" | tower == "Both") {
 
 if (tower == "West" | tower == "Both") {
   # West data
-  tvan_west <- read.csv(file = west_data_fp, sep = "\t",
+  tvan_west <- read.table(file = west_data_fp, sep = "\t",
                         skip =  2, header = FALSE)
   tvan_west_names <- read.table(file = west_data_fp, sep = "\t",
                                 header = TRUE, nrows = 1, stringsAsFactors = FALSE)
@@ -445,6 +445,15 @@ if (tower == "West" | tower == "Both") {
            timestamp = as.POSIXct(paste0(date," 00:00:00"),
                                   format = "%Y-%m-%d %H:%M:%OS",
                                   tz = "MST") + 3600*Hour) 
+}
+
+# Convert rh to % 
+if (tower == "East" | tower == "Both") {
+  tvan_east_tms$rH <- tvan_east_tms$rH*100
+}
+
+if (tower == "West" | tower == "Both") {
+  tvan_west_tms$rH <- tvan_west_tms$rH*100
 }
 
 # Join the flux data to the posix_complete date sequence
@@ -620,14 +629,7 @@ if (tower == "West" | tower == "Both") {
   #   geom_point(alpha = 0.5)
 }
 
-# Convert rh to % 
-if (tower == "East" | tower == "Both") {
-  tvan_east_tms$rH <- tvan_east_tms$rH*100
-}
 
-if (tower == "West" | tower == "Both") {
-  tvan_west_tms$rH <- tvan_west_tms$rH*100
-}
 
 ##############################################################################
 # Prepare data for plotting
