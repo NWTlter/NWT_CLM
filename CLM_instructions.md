@@ -150,7 +150,7 @@ The `singlept` script above will generate a generic surface dataset file for Niw
 ```bash
 module load nco # load the nco command module to access ncap2 program
 # Change the percent sand and clay variables
-ncap2 -s PCT_SAND=PCT_SAND*0+39;PCT_CLAY=PCT_CLAY*0+23 /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706.nc /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay.nc
+ncap2 -s 'PCT_SAND=PCT_SAND*0+39;PCT_CLAY=PCT_CLAY*0+23' /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706.nc /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay.nc
 ```
 
 2) Depending on the vegetation community that you are trying to mimic you will need to modify the depth of the soil (`zbedrock`). `zbedrock` is in units of meters. 
@@ -158,15 +158,15 @@ ncap2 -s PCT_SAND=PCT_SAND*0+39;PCT_CLAY=PCT_CLAY*0+23 /path/to/your/surfacedata
 ```bash
 # Dry meadow & Wet meadow
 # modify a surface dataset with proper clay/sand ratio to have bedrock at 100cm (1 m) deep
-ncap2 -s zbedrock=zbedrock*0+1 /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay.nc /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay_100cm_soildepth.nc
+ncap2 -s 'zbedrock=zbedrock*0+1' /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay.nc /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay_100cm_soildepth.nc
 
 # Moist meadow
 # 130 cm
-ncap2 -s zbedrock=zbedrock*0+1.3 /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay.nc /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay_130cm_soildepth.nc
+ncap2 -s 'zbedrock=zbedrock*0+1.3' /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay.nc /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay_130cm_soildepth.nc
 
 # Snow field and Fellfield
 # 70 cm
-ncap2 -s zbedrock=zbedrock*0+0.7 /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay.nc /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay_70cm_soildepth.nc
+ncap2 -s 'zbedrock=zbedrock*0+0.7' /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay.nc /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay_70cm_soildepth.nc
 
 ```
 
