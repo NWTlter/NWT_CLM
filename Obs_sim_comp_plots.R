@@ -31,8 +31,8 @@ DirBase <- "~/Downloads/"
 DirOutBase <- paste0(DirBase,"OBS_SIM_COMP/")
 
 # Simulation Name (for organizing output and naming)
-
-sim_name <- "clm50bgc_NWT_dm.clm2.h1.2008-2017"
+# This is the same as the "case_name" from flow.sim.R
+sim_name <- "clm50bgc_NWT"
 
 #### Input options ####
 # Simulation data directory (output from flow.sim.R script)
@@ -75,6 +75,7 @@ flx.obs <- read.table(file = obs_file_list[diurnal_file],
 ##############################################################################
 # Combine flux data for plotting
 flx.clm <- flx.clm %>% 
+  filter(veg_com == vegetation_com) %>%
   select(all_of(names(flx.obs)))
 
 flx.plot <- bind_rows(flx.clm, flx.obs)
@@ -116,7 +117,7 @@ names(plots) <- c("RNET", "FSH", "EFLX_LH_TOT","GPP")
 flx_comp_plot <- cowplot::plot_grid(plotlist = get("plots"), ncol = 4)
 
 cowplot::save_plot(flx_comp_plot, 
-                   filename = paste0(DirOut, "/flux_comp_plot.png"),
+                   filename = paste0(DirOut, "/flux_comp_plot_",vegetation_com,".png"),
                    base_height = 6)
 
 
@@ -128,13 +129,12 @@ daily_file <- grep("Daily", sim_file_list)
 daily.clm <- read.table(file = sim_file_list[daily_file],
                       sep = "\t", header = TRUE)
 daily.clm <- daily.clm %>% 
+  filter(veg_com == vegetation_com) %>%
   select(DoY, ObsSim, veg_com, contains("SOI"), contains("GPP")) 
 
 # Change names to reflect obs names
 names(daily.clm) <- sub("TSOI", "soiltemp", names(daily.clm))
 names(daily.clm) <- sub("H2OSOI", "soilmoisture", names(daily.clm))
-names(daily.clm) <- sub("_5_", "_lower_", names(daily.clm))
-names(daily.clm) <- sub("_3_|_2_", "_upper_", names(daily.clm))
 names(daily.clm) <- sub("doyavg", "dailyavg", names(daily.clm))
 names(daily.clm) <- sub("doysd", "dailysd", names(daily.clm))
 
@@ -179,7 +179,7 @@ soil_moisture_plot <- ggplot(daily.plot, aes(x = dummydate)) +
   ggtitle(paste0("Soil properties and GPP for ", vegetation_com, " community"))
 
 ggsave(soil_moisture_plot, 
-       file = paste0(DirOut, "/soil_comp_plot.png"))
+       file = paste0(DirOut, "/soil_comp_plot_", vegetation_com, ".png"))
 
 ##############################################################################
 # Load in unsummarized snow depth data
@@ -211,7 +211,7 @@ snow_depth.obs <- snow_depth.obs %>%
   rename(avg_snwdp = avg_date_depth,
          sd_snwdp = sd_date_depth) %>%
   mutate(ObsSim = "Obs") %>%
-  filter(veg_com == vegetation_com) %>%
+  #filter(veg_com == vegetation_com) %>%
   select(-DoY, -data_information, -Year)
 
 
@@ -220,9 +220,7 @@ names(snow_depth.obs)
 names(snow_depth.clm)
 
 
-snow_depth.plot <- bind_rows(snow_depth.clm, snow_depth.obs) %>%
-  mutate(ymax = avg_snwdp + sd_snwdp,
-         ymin = avg_snwdp - sd_snwdp)
+snow_depth.plot <- bind_rows(snow_depth.clm, snow_depth.obs)
 
 
 snow_depth_plot <- ggplot(snow_depth.plot %>%
@@ -236,12 +234,13 @@ snow_depth_plot <- ggplot(snow_depth.plot %>%
   geom_line(aes(y = avg_snwdp,
                 group = ObsSim,
                 color = ObsSim)) +
+  facet_wrap(~veg_com, ncol = 1, scales = "free_y") +
   scale_x_date(date_labels = "%Y", date_breaks = "1 year") +
   scale_color_manual(values = c("black", "firebrick")) +
   scale_fill_manual(values = c("black", "firebrick")) +
   theme_bw() +
   xlab("Day of Year") + ylab("Snow Depth (cm)") +
-  ggtitle(paste0("Snow depth for ", vegetation_com, " community"))
+  ggtitle(paste0("Snow depth"))
   
 
 ggsave(snow_depth_plot, 
