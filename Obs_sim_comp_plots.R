@@ -44,6 +44,8 @@ DirObsIn = paste0(DirBase,'OBS/data')
 # What vegetation community are we working with?
 vegetation_com <- "DM" # Options: "FF", "DM", "WM", "MM", "SB", NA
 
+# Tvan data file path for 30 minute summary in July
+tvan_data_fp <- "~/Downloads/CLM/datav20200816T1808/data/tvan_forcing_data_precip_mods_both_towers_2007-05-11_2020-08-11.txt"
 ##############################################################################
 # Static workflow parameters - these are unlikely to change
 ##############################################################################
@@ -56,6 +58,56 @@ sim_file_list <- list.files(DirSimIn, full.names = TRUE)
 
 # observation file list
 obs_file_list <- list.files(DirObsIn, full.names = TRUE)
+
+
+##############################################################################
+# Diel plots - fast model/obs timestamp comparison
+##############################################################################
+# Load CLM simulation data
+hlf_hrly_file <- grep("30", sim_file_list)
+hlf_hr_flx.clm <- read.table(file = sim_file_list[hlf_hrly_file],
+                      sep = "\t", header = TRUE)
+
+# Load Obs data
+hlf_hrly_file <- grep("July", obs_file_list)
+hlf_hr_flx.obs <- read.table(file = obs_file_list[hlf_hrly_file],
+                      sep = "\t", header = TRUE)
+
+# Reformat simulation fluxes
+diurnal_flx_vars <- c("RNET", "FSH", "EFLX_LH_TOT", "GPP")
+
+hlf_hr_flx.clm <- hlf_hr_flx.clm %>% 
+  filter(veg_com == vegetation_com) %>%
+  select(Hour, DoY, year, month, all_of(diurnal_flx_vars)) %>%
+  filter(month == 7) %>%
+  group_by(Hour) %>%
+  summarize_at(all_of(diurnal_flx_vars),
+               list(houravg = mean, hoursd = sd), na.rm = TRUE) %>%
+  mutate(ObsSim = "Sim")
+
+
+##############################################################################
+# Diel plots
+##############################################################################
+diel.plot <- hlf_hr_flx.clm %>%
+  select(Hour, ends_with("avg")) %>%
+  pivot_longer(cols = !Hour, 
+               names_to = "Sim_diurnal_flx", 
+               values_to = "Sim_value") %>%
+  left_join(hlf_hr_flx.obs %>%
+              select(Hour, ends_with("avg")) %>%
+              pivot_longer(cols = !Hour, 
+                           names_to = "Obs_diurnal_flx", 
+                           values_to = "Obs_value"), 
+            by = c("Hour" = "Hour", "Sim_diurnal_flx" = "Obs_diurnal_flx")) %>%
+  rename(diurnal_flx = Sim_diurnal_flx)
+
+
+diel_plot <- ggplot(data = diel.plot, aes(x = Obs_value, y = Sim_value)) +
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0) + 
+  facet_wrap(~diurnal_flx, scales = "free")
+diel_plot
 
 ##############################################################################
 # Load in flux data
@@ -70,6 +122,7 @@ diurnal_file <- grep("Diurnal", obs_file_list)
 flx.obs <- read.table(file = obs_file_list[diurnal_file],
                       sep = "\t", header = TRUE)
 
+
 ##############################################################################
 # Plot flux data
 ##############################################################################
@@ -78,7 +131,11 @@ flx.clm <- flx.clm %>%
   filter(veg_com == vegetation_com) %>%
   select(all_of(names(flx.obs)))
 
-flx.plot <- bind_rows(flx.clm, flx.obs)
+
+flx.plot <- bind_rows(flx.clm, flx.obs) %>%
+  # reorder months in order of season
+  mutate(MonGroup = factor(MonGroup, levels = c("JJA", "MAM", "DJF", "SON")))
+  
 
 plot_forcing_var <- function(x) {
   #x <- "RNET"
@@ -162,6 +219,11 @@ daily.plot <- bind_rows(daily.clm, daily.obs) %>%
   mutate(MeanMetric = gsub("_dailyavg", "", MeanMetric),
          SDMetric = gsub("_dailysd", "", SDMetric)) %>%
   filter(MeanMetric == SDMetric) %>%
+  # change the order of MeanMetric for more intuitive plots
+  mutate(MeanMetric = factor(MeanMetric, 
+                             levels = c("GPP", "soilmoisture_upper",
+                                        "soilmoisture_lower", 
+                                        "soiltemp_upper", "soiltemp_lower"))) %>%
   # make a dummy date for easy plotting
   mutate(dummydate = days(DoY) + ymd("2000-01-01"))
 

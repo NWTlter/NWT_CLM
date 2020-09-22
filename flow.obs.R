@@ -350,7 +350,16 @@ tvan_comb_mod.daily <- tvan_comb_mod %>%
   mutate(ObsSim = "Obs") %>%
   mutate(veg_com = "FF")
 
-
+# Get July data
+jul_30_min_tvan <- tvan_comb_mod %>% 
+  select(-timestamp, -date) %>%
+  select(Hour, DoY, Year, month, all_of(diurnal_flx_vars)) %>%
+  filter(month == 7) %>%
+  group_by(Hour) %>%
+  summarize_at(all_of(diurnal_flx_vars),
+               list(houravg = mean, hoursd = sd), na.rm = TRUE) %>%
+  mutate(ObsSim = "Obs") %>%
+  mutate(veg_com = "FF")
 
 ################################################################################
 # Load Saddle Catchment Sensor Network Data
@@ -830,6 +839,14 @@ tvan_comb_mod.diurnal_seasonal <- tvan_comb_mod.diurnal_seasonal %>%
          EFLX_LH_TOT_hoursd = LE_hoursd)
 
 
+# July flux summary
+jul_30_min_tvan <- jul_30_min_tvan %>%
+  rename(RNET_houravg = radNet_houravg,
+         RNET_hoursd = radNet_hoursd,
+         FSH_houravg = H_houravg,
+         FSH_hoursd = H_hoursd,
+         EFLX_LH_TOT_houravg = LE_houravg,
+         EFLX_LH_TOT_hoursd = LE_hoursd)
 
 # Data frame 2: 
 # Daily averages for each vegetation community
@@ -859,6 +876,11 @@ writeLines("Writing out diurnal, daily, and annual data.")
 # Diurnal-seasonal data
 write.table(tvan_comb_mod.diurnal_seasonal, 
             file = paste0(DirOutBase, "/Diurnal_seasonal_summaries_", "tvan_flux.txt"),
+            row.names = FALSE, sep = "\t")
+
+# Diurnal-seasonal data
+write.table(jul_30_min_tvan, 
+            file = paste0(DirOutBase, "/July_flux_summary_", "tvan_flux.txt"),
             row.names = FALSE, sep = "\t")
 
 # DoY data 
