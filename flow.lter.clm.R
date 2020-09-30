@@ -42,13 +42,10 @@ options(stringsAsFactors = F)
 makeplots <- TRUE # FALSE
 
 #### Output Options ####
-# The version data for the FP standard conversion processing
-ver <- paste0("v",format(Sys.time(), "%Y%m%dT%H%m"))
-
 # Base directory for all files
 DirBase <- "~/Desktop/Working_files/Niwot/"
 # Base directory for output
-DirOutBase <- paste0(DirBase,"CLM/data",ver)
+DirOutBase <- paste0(DirBase,"CLM/data")
 
 #### Download and input options ####
 # Directory to download precipitation and radidation data to

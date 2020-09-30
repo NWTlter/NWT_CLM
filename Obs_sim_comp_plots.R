@@ -6,7 +6,7 @@ rm(list = ls())
 
 #Call the R HDF5 Library
 packReq <- c("magrittr","EML", "dplyr", "ggplot2", 
-             "purrr", "tidyr", "lubridate","RCurl")
+             "purrr", "tidyr", "lubridate","RCurl", "cowplot")
 
 #Install and load all required packages
 lapply(packReq, function(x) {
@@ -26,25 +26,26 @@ options(stringsAsFactors = F)
 #### Output Options ####
 
 # Base directory for all files
-DirBase <- "~/Desktop/Working_files/Niwot/CLM/"
+DirBase <- "~/Downloads/"
 # Base directory for output
 DirOutBase <- paste0(DirBase,"OBS_SIM_COMP/")
 
 # Simulation Name (for organizing output and naming)
-
-sim_name <- "clm50bgc_NWT_dm.clm2.h1.2008-2017"
+# This is the same as the "case_name" from flow.sim.R
+sim_name <- "clm50bgc_NWT"
 
 #### Input options ####
 # Simulation data directory (output from flow.sim.R script)
 DirSimIn = paste0(DirBase,'SIM/',sim_name)
 
 # Observation data directory (output from flow.obs.R script)
-# Maybe this should be renamed to facilitate analyses?
-DirObsIn = paste0(DirBase,'OBS/datav20200825T1508')
+DirObsIn = paste0(DirBase,'OBS/data')
 
 # What vegetation community are we working with?
 vegetation_com <- "DM" # Options: "FF", "DM", "WM", "MM", "SB", NA
 
+# Tvan data file path for 30 minute summary in July
+tvan_data_fp <- "~/Downloads/CLM/datav20200816T1808/data/tvan_forcing_data_precip_mods_both_towers_2007-05-11_2020-08-11.txt"
 ##############################################################################
 # Static workflow parameters - these are unlikely to change
 ##############################################################################
@@ -57,6 +58,56 @@ sim_file_list <- list.files(DirSimIn, full.names = TRUE)
 
 # observation file list
 obs_file_list <- list.files(DirObsIn, full.names = TRUE)
+
+
+##############################################################################
+# Diel plots - fast model/obs timestamp comparison
+##############################################################################
+# Load CLM simulation data
+hlf_hrly_file <- grep("30", sim_file_list)
+hlf_hr_flx.clm <- read.table(file = sim_file_list[hlf_hrly_file],
+                      sep = "\t", header = TRUE)
+
+# Load Obs data
+hlf_hrly_file <- grep("July", obs_file_list)
+hlf_hr_flx.obs <- read.table(file = obs_file_list[hlf_hrly_file],
+                      sep = "\t", header = TRUE)
+
+# Reformat simulation fluxes
+diurnal_flx_vars <- c("RNET", "FSH", "EFLX_LH_TOT", "GPP")
+
+hlf_hr_flx.clm <- hlf_hr_flx.clm %>% 
+  filter(veg_com == vegetation_com) %>%
+  select(Hour, DoY, year, month, all_of(diurnal_flx_vars)) %>%
+  filter(month == 7) %>%
+  group_by(Hour) %>%
+  summarize_at(all_of(diurnal_flx_vars),
+               list(houravg = mean, hoursd = sd), na.rm = TRUE) %>%
+  mutate(ObsSim = "Sim")
+
+
+##############################################################################
+# Diel plots
+##############################################################################
+diel.plot <- hlf_hr_flx.clm %>%
+  select(Hour, ends_with("avg")) %>%
+  pivot_longer(cols = !Hour, 
+               names_to = "Sim_diurnal_flx", 
+               values_to = "Sim_value") %>%
+  left_join(hlf_hr_flx.obs %>%
+              select(Hour, ends_with("avg")) %>%
+              pivot_longer(cols = !Hour, 
+                           names_to = "Obs_diurnal_flx", 
+                           values_to = "Obs_value"), 
+            by = c("Hour" = "Hour", "Sim_diurnal_flx" = "Obs_diurnal_flx")) %>%
+  rename(diurnal_flx = Sim_diurnal_flx)
+
+
+diel_plot <- ggplot(data = diel.plot, aes(x = Obs_value, y = Sim_value)) +
+  geom_point() +
+  geom_abline(slope = 1, intercept = 0) + 
+  facet_wrap(~diurnal_flx, scales = "free")
+diel_plot
 
 ##############################################################################
 # Load in flux data
@@ -71,14 +122,20 @@ diurnal_file <- grep("Diurnal", obs_file_list)
 flx.obs <- read.table(file = obs_file_list[diurnal_file],
                       sep = "\t", header = TRUE)
 
+
 ##############################################################################
 # Plot flux data
 ##############################################################################
 # Combine flux data for plotting
 flx.clm <- flx.clm %>% 
+  filter(veg_com == vegetation_com) %>%
   select(all_of(names(flx.obs)))
 
-flx.plot <- bind_rows(flx.clm, flx.obs)
+
+flx.plot <- bind_rows(flx.clm, flx.obs) %>%
+  # reorder months in order of season
+  mutate(MonGroup = factor(MonGroup, levels = c("JJA", "MAM", "DJF", "SON")))
+  
 
 plot_forcing_var <- function(x) {
   #x <- "RNET"
@@ -117,7 +174,8 @@ names(plots) <- c("RNET", "FSH", "EFLX_LH_TOT","GPP")
 flx_comp_plot <- cowplot::plot_grid(plotlist = get("plots"), ncol = 4)
 
 cowplot::save_plot(flx_comp_plot, 
-                   filename = paste0(DirOut, "/flux_comp_plot.png"))
+                   filename = paste0(DirOut, "/flux_comp_plot_",vegetation_com,".png"),
+                   base_height = 6)
 
 
 ##############################################################################
@@ -128,22 +186,22 @@ daily_file <- grep("Daily", sim_file_list)
 daily.clm <- read.table(file = sim_file_list[daily_file],
                       sep = "\t", header = TRUE)
 daily.clm <- daily.clm %>% 
+  filter(veg_com == vegetation_com) %>%
   select(DoY, ObsSim, veg_com, contains("SOI"), contains("GPP")) 
 
 # Change names to reflect obs names
 names(daily.clm) <- sub("TSOI", "soiltemp", names(daily.clm))
 names(daily.clm) <- sub("H2OSOI", "soilmoisture", names(daily.clm))
-names(daily.clm) <- sub("_5_", "_lower_", names(daily.clm))
-names(daily.clm) <- sub("_3_|_2_", "_upper_", names(daily.clm))
 names(daily.clm) <- sub("doyavg", "dailyavg", names(daily.clm))
 names(daily.clm) <- sub("doysd", "dailysd", names(daily.clm))
 
-# Load CLM simulation data
+# Load Observational data
 daily_file <- grep("Daily", obs_file_list)
 daily.obs <- read.table(file = obs_file_list[daily_file],
                         sep = "\t", header = TRUE)
 
-daily.obs <- daily.obs %>%
+daily.obs <- daily.obs %>% 
+  select(!contains("snow_depth")) %>%
   filter(veg_com == vegetation_com)
 names(daily.obs) <- sub("_avg_", "_", names(daily.obs))
 
@@ -161,10 +219,15 @@ daily.plot <- bind_rows(daily.clm, daily.obs) %>%
   mutate(MeanMetric = gsub("_dailyavg", "", MeanMetric),
          SDMetric = gsub("_dailysd", "", SDMetric)) %>%
   filter(MeanMetric == SDMetric) %>%
+  # change the order of MeanMetric for more intuitive plots
+  mutate(MeanMetric = factor(MeanMetric, 
+                             levels = c("GPP", "soilmoisture_upper",
+                                        "soilmoisture_lower", 
+                                        "soiltemp_upper", "soiltemp_lower"))) %>%
   # make a dummy date for easy plotting
   mutate(dummydate = days(DoY) + ymd("2000-01-01"))
 
-ggplot(daily.plot, aes(x = dummydate)) +
+soil_moisture_plot <- ggplot(daily.plot, aes(x = dummydate)) +
   geom_ribbon(aes(ymin = DailyMean - DailySD, 
                   ymax = DailyMean + DailySD,
                   fill = ObsSim), alpha = 0.4) +
@@ -173,12 +236,76 @@ ggplot(daily.plot, aes(x = dummydate)) +
   scale_x_date(date_labels = "%b", date_breaks = "1 month") +
   scale_color_manual(values = c("black", "firebrick")) +
   scale_fill_manual(values = c("black", "firebrick")) +
-  theme_bw()
+  theme_bw() +
+  xlab("Day of Year") + ylab("") +
+  ggtitle(paste0("Soil properties and GPP for ", vegetation_com, " community"))
+
+ggsave(soil_moisture_plot, 
+       file = paste0(DirOut, "/soil_comp_plot_", vegetation_com, ".png"))
+
+##############################################################################
+# Load in unsummarized snow depth data
+##############################################################################
+# load in simulations
+clm_file <- grep("Unsummarized", sim_file_list)
+all.clm <- read.table(file = sim_file_list[clm_file],
+                        sep = "\t", header = TRUE)
+
+# Summarize clm snow depth 
+snow_depth.clm <- all.clm %>% 
+  select(date, SNOW_DEPTH, veg_com, ObsSim) %>%
+  group_by(date) %>%
+  mutate(avg_snwdp = mean(SNOW_DEPTH, na.rm = TRUE),
+         sd_snwdp = sd(SNOW_DEPTH, na.rm = TRUE)) %>%
+  select(-SNOW_DEPTH) %>%
+  unique()
+
+# Load in observations
+snwdp_obs_file <- grep("snow_depth", obs_file_list)
+
+snow_depth.obs <- read.table(file = obs_file_list[snwdp_obs_file],
+           sep = "\t", header = TRUE)
 
 
-ggsave(paste0(DirOut, "/meanAnnualCycle_",vegetation_com,".png") )
+# Rename observational data columns to match clm data columns, 
+# filter by vegetation community
+snow_depth.obs <- snow_depth.obs %>% 
+  rename(avg_snwdp = avg_date_depth,
+         sd_snwdp = sd_date_depth) %>%
+  mutate(ObsSim = "Obs") %>%
+  #filter(veg_com == vegetation_com) %>%
+  select(-DoY, -data_information, -Year)
+
+
+# Combine observation and sim data sets
+names(snow_depth.obs)
+names(snow_depth.clm)
+
+
+snow_depth.plot <- bind_rows(snow_depth.clm, snow_depth.obs)
+
+
+snow_depth_plot <- ggplot(snow_depth.plot %>%
+         # add a very small number since geom ribbon can't handle widths of 0
+         mutate(sd_snwdp = ifelse(sd_snwdp == 0, 0.000000000001, sd_snwdp)),
+       aes(x = as.Date(date))) +
+  geom_ribbon(aes(ymin = (avg_snwdp - sd_snwdp),
+                  ymax = (avg_snwdp + sd_snwdp), 
+                  group = ObsSim,
+                  fill = ObsSim), alpha = 0.4) +
+  geom_line(aes(y = avg_snwdp,
+                group = ObsSim,
+                color = ObsSim)) +
+  facet_wrap(~veg_com, ncol = 1, scales = "free_y") +
+  scale_x_date(date_labels = "%Y", date_breaks = "1 year") +
+  scale_color_manual(values = c("black", "firebrick")) +
+  scale_fill_manual(values = c("black", "firebrick")) +
+  theme_bw() +
+  xlab("Day of Year") + ylab("Snow Depth (cm)") +
+  ggtitle(paste0("Snow depth"))
   
-##############################################################################
-# Load in snow depth data
-##############################################################################
+
+ggsave(snow_depth_plot, 
+       file = paste0(DirOut, "/snow_depth_plot.png"))
+
 

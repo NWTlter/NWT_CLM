@@ -150,7 +150,7 @@ The `singlept` script above will generate a generic surface dataset file for Niw
 ```bash
 module load nco # load the nco command module to access ncap2 program
 # Change the percent sand and clay variables
-ncap2 -s PCT_SAND=PCT_SAND*0+39;PCT_CLAY=PCT_CLAY*0+23 /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706.nc /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay.nc
+ncap2 -s 'PCT_SAND=PCT_SAND*0+39;PCT_CLAY=PCT_CLAY*0+23' /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706.nc /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay.nc
 ```
 
 2) Depending on the vegetation community that you are trying to mimic you will need to modify the depth of the soil (`zbedrock`). `zbedrock` is in units of meters. 
@@ -158,15 +158,15 @@ ncap2 -s PCT_SAND=PCT_SAND*0+39;PCT_CLAY=PCT_CLAY*0+23 /path/to/your/surfacedata
 ```bash
 # Dry meadow & Wet meadow
 # modify a surface dataset with proper clay/sand ratio to have bedrock at 100cm (1 m) deep
-ncap2 -s zbedrock=zbedrock*0+1 /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay.nc /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay_100cm_soildepth.nc
+ncap2 -s 'zbedrock=zbedrock*0+1' /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay.nc /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay_100cm_soildepth.nc
 
 # Moist meadow
 # 130 cm
-ncap2 -s zbedrock=zbedrock*0+1.3 /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay.nc /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay_130cm_soildepth.nc
+ncap2 -s 'zbedrock=zbedrock*0+1.3' /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay.nc /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay_130cm_soildepth.nc
 
 # Snow field and Fellfield
 # 70 cm
-ncap2 -s zbedrock=zbedrock*0+0.7 /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay.nc /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay_70cm_soildepth.nc
+ncap2 -s 'zbedrock=zbedrock*0+0.7' /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay.nc /path/to/your/surfacedata/surfdata_0.9x1.25_16pfts_CMIP6_simyr1850_254.42_40.05_c170706_pctsandclay_70cm_soildepth.nc
 
 ```
 
@@ -598,9 +598,9 @@ If you are cloning the case to alter vegetation community settings make sure you
  - [ ] surface dataset files must be correct for the vegetation community
  - [ ] make sure your user_nl_clm is still pointing to the right surface dataset, parameter file, etc. (if you want you can copy the parameter file into the new case directory, but need to point to it in user_nl_clm)
 
-# After your done
+# After you're done
 
-The `flow.sim.R` script expects 30 minute data. Concatinating the data into a single file makes this easier.  If you followed the instructions above, the code below will concatinate your *.h1.* files together
+The `flow.sim.R` script expects 30 minute data. Concatenating the data into a single file makes this easier.  If you followed the instructions above, the code below will concatenate your *.h1.* files together
 
 ```bash
 cd /scratch/$USER/archive/$CASE_NAME/lnd/hist
