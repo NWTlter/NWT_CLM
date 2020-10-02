@@ -25,10 +25,21 @@ options(stringsAsFactors = F)
 
 #### Output Options ####
 
-# Base directory for all files
-DirBase <- "~/Downloads/"
-# Base directory for output
-DirOutBase <- paste0(DirBase,"OBS_SIM_COMP/")
+# 1) Base directory for all files
+# 2) Base directory for output
+# 3)  Tvan data file path for 30 minute summary in July
+
+user = 'wwieder'
+if (user ==  'wwieder') {
+  DirBase <- "/Users/wwieder/Desktop/Working_files/Niwot/CLM/"
+  DirOutBase <- paste0(DirBase,"OBS_SIM_COMP/")
+  tvan_data_fp <- "~/Downloads/CLM/datav20200824T1008/data/tvan_forcing_data_precip_mods_both_towers_2007-05-11_2020-08-11.txt"
+} else {
+  DirBase <- "~/Downloads"
+  DirOutBase <- paste0(DirBase,"OBS_SIM_COMP/")
+  tvan_data_fp <- "~/Downloads/CLM/datav20200816T1808/data/tvan_forcing_data_precip_mods_both_towers_2007-05-11_2020-08-11.txt"
+}
+
 
 # Simulation Name (for organizing output and naming)
 # This is the same as the "case_name" from flow.sim.R
@@ -44,8 +55,7 @@ DirObsIn = paste0(DirBase,'OBS/data')
 # What vegetation community are we working with?
 vegetation_com <- "DM" # Options: "FF", "DM", "WM", "MM", "SB", NA
 
-# Tvan data file path for 30 minute summary in July
-tvan_data_fp <- "~/Downloads/CLM/datav20200816T1808/data/tvan_forcing_data_precip_mods_both_towers_2007-05-11_2020-08-11.txt"
+
 ##############################################################################
 # Static workflow parameters - these are unlikely to change
 ##############################################################################

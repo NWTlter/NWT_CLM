@@ -14,6 +14,7 @@
 ##############################################################################
 # Dependencies
 ##############################################################################
+rm(list = ls())
 
 #Call the R HDF5 Library
 packReq <- c("magrittr","EML", "dplyr", "ggplot2", 
@@ -32,25 +33,33 @@ options(stringsAsFactors = F)
 
 ##############################################################################
 #Workflow parameters
-##############################################################################
+#########################datav20200816T1808#####################################################
 #### Output Options ####
-# Base directory for output
-DirOutBase <- paste0("~/Downloads/OBS/data")
+# 1) Base directory for output
+# 2) Directory to download observation data to 
+# 3) Location of the tvan data that was used to create forcing files
+#      location of tvan data with soil information; Note: Tvan soil temperature data
+#      probes from East tower do not work, so please give west tower tvan data location
+# I'm trying to make it so we don't have to keep changing this...
 
-#### Download and input options ####
-# Directory to download observation data to 
-DirDnld = "~/Downloads/CLM/OBS/NWT_lter_obs_downloads"
+user = 'wwieder'
+if (user ==  'wwieder') {
+  DirOutBase <- paste0("~/Desktop/Working_files/Niwot/CLM/OBS/data")
+  DirDnld = "~/Desktop/Working_files/Niwot/CLM/OBS/NWT_lter_obs_downloads"
+  tvan_data_fp <- "~/Desktop/Working_files/Niwot/CLM/datav20200824T1008/data/tvan_forcing_data_precip_mods_both_towers_2007-05-11_2020-08-11.txt"
+  tvan_data_soil <- "~/Desktop/Working_files/Niwot/Tvan_out_new/filtered_data/tvan_West_2007-05-09_19-00-00_to_2020-08-11_00-30-00_flux_P.csv"
+  
+} else { 
+  DirOutBase <- paste0("~/Downloads/OBS/data") 
+  DirDnld = "~/Downloads/CLM/OBS/NWT_lter_obs_downloads"
+  tvan_data_fp <- "~/Downloads/CLM/datav20200816T1808/data/tvan_forcing_data_precip_mods_both_towers_2007-05-11_2020-08-11.txt"
+  tvan_data_soil <- "~/Desktop/Working_files/Niwot/Tvan_out_new/filtered_data/tvan_West_2007-05-09_19-00-00_to_2020-08-11_00-30-00_flux_P.csv"
+}
 
 # Should a newer version of EDI data be downloaded if one is available?
 getNewData = TRUE
 
-#### Tvan data location ####
-# Location of the tvan data that was used to create forcing files
-tvan_data_fp <- "~/Downloads/CLM/datav20200816T1808/data/tvan_forcing_data_precip_mods_both_towers_2007-05-11_2020-08-11.txt"
 
-# location of tvan data with soil information; Note: Tvan soil temperature data
-# probes from East tower do not work, so please give west tower tvan data location
-tvan_data_soil <- "~/Desktop/Working_files/Niwot/Tvan_out_new/filtered_data/tvan_West_2007-05-09_19-00-00_to_2020-08-11_00-30-00_flux_P.csv"
 
 ##############################################################################
 # Static workflow parameters - these are unlikely to change
@@ -302,6 +311,9 @@ tvan_comb_units <- as.character(unname(unlist(tvan_comb_names[1,])))
 
 colnames(tvan_comb) <- names(tvan_comb_names)
 
+# convert flux GPP (umol/m2/s to g/m2/s, as in CLM)
+tvan_comb$GPP = tvan_comb$GPP * 1e-6 * 12.01
+tvan_comb_units[1]  =  'gC m-2 s-1'
 ################################################################################
 # Clean and format Tvan Flux data
 ################################################################################
@@ -565,6 +577,7 @@ tvan_soil_names <- read.table(file = tvan_data_soil, sep = ",",
 tvan_soil_units <- as.character(unname(unlist(tvan_soil_names[1,])))
 
 colnames(tvan_soil) <- names(tvan_soil_names)
+
 
 # Fix time, rename to match generic names of sensor network soil data, add informational
 # columns about the data's origin, and vegetation community
@@ -923,3 +936,4 @@ write.table(sad_prod_mod,
                           "/saddle_grid_productivity_data.txt"),
             row.names = FALSE, sep = "\t")
 
+print('--- finished  with script ---')
