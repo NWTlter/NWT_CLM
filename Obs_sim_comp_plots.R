@@ -31,7 +31,7 @@ options(stringsAsFactors = F)
 
 user = 'wwieder'
 if (user ==  'wwieder') {
-  DirBase <- "/Users/wwieder/Desktop/Working_files/Niwot/CLM/"
+  DirBase <- "~/Desktop/Working_files/Niwot/CLM/"
   DirOutBase <- paste0(DirBase,"OBS_SIM_COMP/")
   tvan_data_fp <- "~/Downloads/CLM/datav20200824T1008/data/tvan_forcing_data_precip_mods_both_towers_2007-05-11_2020-08-11.txt"
 } else {
@@ -154,7 +154,7 @@ plot_forcing_var <- function(x) {
     rename(hourly_mean := !!quo_name(paste0(x, "_houravg")),
            hourly_sd := !!quo_name(paste0(x, "_hoursd")))
 
-  ylabels <- c("GPP" = expression('GPP ('~gC~m^-2~s^-2~')'),
+  ylabels <- c("GPP" = expression('GPP ('~gC~m^-2~s^-1~')'),
             "FSH" = expression('Sensible Heat Flux ('~W~m^-2~')'),
             "EFLX_LH_TOT" = expression('Latent Heat Flux ('~W~m^-2~')'),
             "RNET" = expression('Net Radiation ('~W~m^-2~')'))
@@ -264,7 +264,7 @@ all.clm <- read.table(file = sim_file_list[clm_file],
 # Summarize clm snow depth 
 snow_depth.clm <- all.clm %>% 
   select(date, SNOW_DEPTH, veg_com, ObsSim) %>%
-  group_by(date) %>%
+  group_by(date, veg_com) %>%
   mutate(avg_snwdp = mean(SNOW_DEPTH, na.rm = TRUE),
          sd_snwdp = sd(SNOW_DEPTH, na.rm = TRUE)) %>%
   select(-SNOW_DEPTH) %>%
