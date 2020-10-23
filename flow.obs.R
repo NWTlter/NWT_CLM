@@ -474,7 +474,7 @@ writeLines(paste0("Collapsing 10-minute soil sensor data into 30-minute chunks, 
 # joining the 30-minute data together after each is combined
 sad_sens_soilmoist_temp <- sad_sens_10min %>%
   # Get half-hourly averages
-  group_by(date, decimalTime) %>%
+  group_by(date, decimalTime, sensornode) %>%
   mutate(across(contains("soil"), list(~mean(., na.rm = TRUE)), 
                 .names = "mean_{col}")) %>%
   ungroup() %>%
@@ -672,6 +672,10 @@ soilmoist_temp_comb_daily <- soilmoist_temp_comb %>%
   select(DoY, month, ends_with("_avg_dailyavg"), ends_with("_avg_dailysd"), 
          veg_com, data_information) %>%
   unique()
+
+names(soilmoist_temp_comb_daily)
+ggplot(soilmoist_temp_comb_daily, aes(x = DoY)) +
+  geom_line(aes(y = soilmoisture_upper_avg_dailyavg, color = veg_com))
 
 
 ################################################################################
