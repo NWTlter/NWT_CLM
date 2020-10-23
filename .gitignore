@@ -3,8 +3,13 @@
 .RData
 .Ruserdata
 .html
+<<<<<<< HEAD
+README.html
+CLM_instructions.html
+=======
 .Rproj.user
 NWT_CLM.Rproj
 CLM_instructions.html
 .RData
 .Rhistory
+>>>>>>> 9dcd0d439792526e5fe3f7ae341db864c62617d1

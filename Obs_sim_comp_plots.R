@@ -25,10 +25,21 @@ options(stringsAsFactors = F)
 
 #### Output Options ####
 
-# Base directory for all files
-DirBase <- "~/Downloads/"
-# Base directory for output
-DirOutBase <- paste0(DirBase,"OBS_SIM_COMP/")
+# 1) Base directory for all files
+# 2) Base directory for output
+# 3)  Tvan data file path for 30 minute summary in July
+
+user = 'wwieder'
+if (user ==  'wwieder') {
+  DirBase <- "~/Desktop/Working_files/Niwot/CLM/"
+  DirOutBase <- paste0(DirBase,"OBS_SIM_COMP/")
+  tvan_data_fp <- "~/Downloads/CLM/datav20200824T1008/data/tvan_forcing_data_precip_mods_both_towers_2007-05-11_2020-08-11.txt"
+} else {
+  DirBase <- "~/Downloads"
+  DirOutBase <- paste0(DirBase,"OBS_SIM_COMP/")
+  tvan_data_fp <- "~/Downloads/CLM/datav20200816T1808/data/tvan_forcing_data_precip_mods_both_towers_2007-05-11_2020-08-11.txt"
+}
+
 
 # Simulation Name (for organizing output and naming)
 # This is the same as the "case_name" from flow.sim.R
@@ -42,10 +53,9 @@ DirSimIn = paste0(DirBase,'SIM/',sim_name)
 DirObsIn = paste0(DirBase,'OBS/data')
 
 # What vegetation community are we working with?
-vegetation_com <- "DM" # Options: "FF", "DM", "WM", "MM", "SB", NA
+vegetation_com <- "MM" # Options: "FF", "DM", "WM", "MM", "SB", NA
 
-# Tvan data file path for 30 minute summary in July
-tvan_data_fp <- "~/Downloads/CLM/datav20200816T1808/data/tvan_forcing_data_precip_mods_both_towers_2007-05-11_2020-08-11.txt"
+
 ##############################################################################
 # Static workflow parameters - these are unlikely to change
 ##############################################################################
@@ -144,7 +154,7 @@ plot_forcing_var <- function(x) {
     rename(hourly_mean := !!quo_name(paste0(x, "_houravg")),
            hourly_sd := !!quo_name(paste0(x, "_hoursd")))
 
-  ylabels <- c("GPP" = expression('GPP ('~gC~m^-2~s^-2~')'),
+  ylabels <- c("GPP" = expression('GPP ('~gC~m^-2~s^-1~')'),
             "FSH" = expression('Sensible Heat Flux ('~W~m^-2~')'),
             "EFLX_LH_TOT" = expression('Latent Heat Flux ('~W~m^-2~')'),
             "RNET" = expression('Net Radiation ('~W~m^-2~')'))
@@ -200,6 +210,11 @@ daily_file <- grep("Daily", obs_file_list)
 daily.obs <- read.table(file = obs_file_list[daily_file],
                         sep = "\t", header = TRUE)
 
+## quick plot of all results
+names(daily.obs)
+ggplot(daily.obs, aes(x = DoY)) +
+  geom_line(aes(y = soilmoisture_upper_avg_dailyavg, color = veg_com))
+
 daily.obs <- daily.obs %>% 
   select(!contains("snow_depth")) %>%
   filter(veg_com == vegetation_com)
@@ -254,7 +269,7 @@ all.clm <- read.table(file = sim_file_list[clm_file],
 # Summarize clm snow depth 
 snow_depth.clm <- all.clm %>% 
   select(date, SNOW_DEPTH, veg_com, ObsSim) %>%
-  group_by(date) %>%
+  group_by(date, veg_com) %>%
   mutate(avg_snwdp = mean(SNOW_DEPTH, na.rm = TRUE),
          sd_snwdp = sd(SNOW_DEPTH, na.rm = TRUE)) %>%
   select(-SNOW_DEPTH) %>%

@@ -14,6 +14,7 @@
 ##############################################################################
 # Dependencies
 ##############################################################################
+rm(list = ls())
 
 #Call the R HDF5 Library
 packReq <- c("magrittr","EML", "dplyr", "ggplot2", 
@@ -34,23 +35,31 @@ options(stringsAsFactors = F)
 #Workflow parameters
 ##############################################################################
 #### Output Options ####
-# Base directory for output
-DirOutBase <- paste0("~/Downloads/OBS/data")
+# 1) Base directory for output
+# 2) Directory to download observation data to 
+# 3) Location of the tvan data that was used to create forcing files
+#      location of tvan data with soil information; Note: Tvan soil temperature data
+#      probes from East tower do not work, so please give west tower tvan data location
+# I'm trying to make it so we don't have to keep changing this...
 
-#### Download and input options ####
-# Directory to download observation data to 
-DirDnld = "~/Downloads/CLM/OBS/NWT_lter_obs_downloads"
+user = 'wwieder'
+if (user ==  'wwieder') {
+  DirOutBase <- paste0("~/Desktop/Working_files/Niwot/CLM/OBS/data")
+  DirDnld = "~/Desktop/Working_files/Niwot/CLM/OBS/NWT_lter_obs_downloads"
+  tvan_data_fp <- "~/Desktop/Working_files/Niwot/CLM/datav20200824T1008/data/tvan_forcing_data_precip_mods_both_towers_2007-05-11_2020-08-11.txt"
+  tvan_data_soil <- "~/Desktop/Working_files/Niwot/Tvan_out_new/filtered_data/tvan_West_2007-05-09_19-00-00_to_2020-08-11_00-30-00_flux_P.csv"
+  
+} else { 
+  DirOutBase <- paste0("~/Downloads/OBS/data") 
+  DirDnld = "~/Downloads/CLM/OBS/NWT_lter_obs_downloads"
+  tvan_data_fp <- "~/Downloads/CLM/datav20200816T1808/data/tvan_forcing_data_precip_mods_both_towers_2007-05-11_2020-08-11.txt"
+  tvan_data_soil <- "~/Desktop/Working_files/Niwot/Tvan_out_new/filtered_data/tvan_West_2007-05-09_19-00-00_to_2020-08-11_00-30-00_flux_P.csv"
+}
 
 # Should a newer version of EDI data be downloaded if one is available?
 getNewData = TRUE
 
-#### Tvan data location ####
-# Location of the tvan data that was used to create forcing files
-tvan_data_fp <- "~/Downloads/CLM/datav20200816T1808/data/tvan_forcing_data_precip_mods_both_towers_2007-05-11_2020-08-11.txt"
 
-# location of tvan data with soil information; Note: Tvan soil temperature data
-# probes from East tower do not work, so please give west tower tvan data location
-tvan_data_soil <- "~/Desktop/Working_files/Niwot/Tvan_out_new/filtered_data/tvan_West_2007-05-09_19-00-00_to_2020-08-11_00-30-00_flux_P.csv"
 
 ##############################################################################
 # Static workflow parameters - these are unlikely to change
@@ -302,6 +311,9 @@ tvan_comb_units <- as.character(unname(unlist(tvan_comb_names[1,])))
 
 colnames(tvan_comb) <- names(tvan_comb_names)
 
+# convert flux GPP (umol/m2/s to g/m2/s, as in CLM)
+tvan_comb$GPP = tvan_comb$GPP * 1e-6 * 12.01
+tvan_comb_units[1]  =  'gC m-2 s-1'
 ################################################################################
 # Clean and format Tvan Flux data
 ################################################################################
@@ -462,7 +474,7 @@ writeLines(paste0("Collapsing 10-minute soil sensor data into 30-minute chunks, 
 # joining the 30-minute data together after each is combined
 sad_sens_soilmoist_temp <- sad_sens_10min %>%
   # Get half-hourly averages
-  group_by(date, decimalTime) %>%
+  group_by(date, decimalTime, sensornode) %>%
   mutate(across(contains("soil"), list(~mean(., na.rm = TRUE)), 
                 .names = "mean_{col}")) %>%
   ungroup() %>%
@@ -586,28 +598,8 @@ tvan_soil_mod <- tvan_soil %>%
          data_set = "Tvan_West_Tower_10cm_30cm_moisttemp_probes")
 
 
-# test <- flux_P_all %>% 
-#   select(time, H) %>%
-#   mutate(timestamp = with_tz(time, "MST"),
-#          year = year(as.Date(timestamp))) %>%
-#   filter(year %in% c(2015)) %>%
-#   mutate(Hour = lubridate::hour(timestamp) + 
-#            lubridate::minute(timestamp)/60,
-#          date = lubridate::date(timestamp),
-#          month = month(date),
-#          MONgroup = if_else(month %in% c(1:6), "Jan-Jun", "Jul-Jan"),
-#          # timestamp = if_else(month %in% c(7:12), timestamp +
-#          #                        lubridate::hours(7), timestamp),
-#          year = as.factor(year(date)),
-#          Hour = lubridate::hour(timestamp) + 
-#            lubridate::minute(timestamp)/60)  %>%
-#   filter(H < 500) %>%
-#   filter(H > -250)
-# 
-# ggplot(test, aes(x = Hour, y = H)) +
-#   geom_point(aes(color = MONgroup), alpha = 0.3)
-# 
-# test
+plot(tvan_soil_mod$date, tvan_soil_mod$soiltemp_upper_avg,pch='.')
+ggplot(tvan_soil_mod, aes(x = date, y = soiltemp_upper_avg)) 
 
 
 ################################################################################
@@ -680,6 +672,10 @@ soilmoist_temp_comb_daily <- soilmoist_temp_comb %>%
   select(DoY, month, ends_with("_avg_dailyavg"), ends_with("_avg_dailysd"), 
          veg_com, data_information) %>%
   unique()
+
+names(soilmoist_temp_comb_daily)
+ggplot(soilmoist_temp_comb_daily, aes(x = DoY)) +
+  geom_line(aes(y = soilmoisture_upper_avg_dailyavg, color = veg_com))
 
 
 ################################################################################
@@ -923,3 +919,4 @@ write.table(sad_prod_mod,
                           "/saddle_grid_productivity_data.txt"),
             row.names = FALSE, sep = "\t")
 
+print('--- finished  with script ---')
