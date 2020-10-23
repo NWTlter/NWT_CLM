@@ -41,11 +41,11 @@ DirIn <- paste0(DirOutBase,"clm_history_files/")
 # The names of the netcdf files from each simulation you want to work with.
 # If you don't have a netcdf for a particular vegetation community, leave
 # the file path blank.
-ff_ncdf_fp <- "clm50bgc_NWT_ff_lowSAT.clm2.h1.2008-2017.nc" # fell field
-dm_ncdf_fp <- "clm50bgc_NWT_dm_lowSAT.clm2.h1.2008-2017.nc" # dry meadow
+ff_ncdf_fp <- "clm50bgc_NWT_ff_lowSAT_noPSNmods.clm2.h1.2008-2019.nc" # fell field
+dm_ncdf_fp <- "clm50bgc_NWT_dm_lowSAT.clm2.h1.2008-2019.nc" # dry meadow
 wm_ncdf_fp <- "" # wet meadow
-mm_ncdf_fp <- "clm50bgc_NWT_mm.clm2.h1.2008-2017.nc" # moist meadow
-sb_ncdf_fp <- "clm50bgc_NWT_sb.clm2.h1.2008-2017.nc" # snow bed
+mm_ncdf_fp <- "clm50bgc_NWT_mm.clm2.h1.2008-2019.nc" # moist meadow
+sb_ncdf_fp <- "clm50bgc_NWT_sb.clm2.h1.2008-2019.nc" # snow bed
 
 #### Extra Variable Choice ####
 # The names of any optional extra variables the user would like to extract
