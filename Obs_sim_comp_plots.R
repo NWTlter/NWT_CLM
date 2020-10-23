@@ -53,7 +53,7 @@ DirSimIn = paste0(DirBase,'SIM/',sim_name)
 DirObsIn = paste0(DirBase,'OBS/data')
 
 # What vegetation community are we working with?
-vegetation_com <- "DM" # Options: "FF", "DM", "WM", "MM", "SB", NA
+vegetation_com <- "MM" # Options: "FF", "DM", "WM", "MM", "SB", NA
 
 
 ##############################################################################
@@ -209,6 +209,11 @@ names(daily.clm) <- sub("doysd", "dailysd", names(daily.clm))
 daily_file <- grep("Daily", obs_file_list)
 daily.obs <- read.table(file = obs_file_list[daily_file],
                         sep = "\t", header = TRUE)
+
+## quick plot of all results
+names(daily.obs)
+ggplot(daily.obs, aes(x = DoY)) +
+  geom_line(aes(y = soilmoisture_upper_avg_dailyavg, color = veg_com))
 
 daily.obs <- daily.obs %>% 
   select(!contains("snow_depth")) %>%
