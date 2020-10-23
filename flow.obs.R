@@ -578,7 +578,6 @@ tvan_soil_units <- as.character(unname(unlist(tvan_soil_names[1,])))
 
 colnames(tvan_soil) <- names(tvan_soil_names)
 
-
 # Fix time, rename to match generic names of sensor network soil data, add informational
 # columns about the data's origin, and vegetation community
 tvan_soil_mod <- tvan_soil %>%
@@ -599,28 +598,8 @@ tvan_soil_mod <- tvan_soil %>%
          data_set = "Tvan_West_Tower_10cm_30cm_moisttemp_probes")
 
 
-# test <- flux_P_all %>% 
-#   select(time, H) %>%
-#   mutate(timestamp = with_tz(time, "MST"),
-#          year = year(as.Date(timestamp))) %>%
-#   filter(year %in% c(2015)) %>%
-#   mutate(Hour = lubridate::hour(timestamp) + 
-#            lubridate::minute(timestamp)/60,
-#          date = lubridate::date(timestamp),
-#          month = month(date),
-#          MONgroup = if_else(month %in% c(1:6), "Jan-Jun", "Jul-Jan"),
-#          # timestamp = if_else(month %in% c(7:12), timestamp +
-#          #                        lubridate::hours(7), timestamp),
-#          year = as.factor(year(date)),
-#          Hour = lubridate::hour(timestamp) + 
-#            lubridate::minute(timestamp)/60)  %>%
-#   filter(H < 500) %>%
-#   filter(H > -250)
-# 
-# ggplot(test, aes(x = Hour, y = H)) +
-#   geom_point(aes(color = MONgroup), alpha = 0.3)
-# 
-# test
+plot(tvan_soil_mod$date, tvan_soil_mod$soiltemp_upper_avg,pch='.')
+ggplot(tvan_soil_mod, aes(x = date, y = soiltemp_upper_avg)) 
 
 
 ################################################################################
