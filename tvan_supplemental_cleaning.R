@@ -20,6 +20,7 @@
 ##############################################################################
 # Dependencies
 ##############################################################################
+rm(list = ls())
 
 packReq <- c("dplyr", "ggplot2", "tidyr", "lubridate", "EML", "xts")
 
@@ -40,34 +41,37 @@ options(stringsAsFactors = F)
 ##############################################################################
 #### Ploting options ####
 # Should plots be made?
-makeplots <- TRUE # TRUE = default
+makeplots <- FALSE # TRUE = default
 
 #### Output Options ####
 # The output directory for the script. It is recommended but not required that this
 # be the same directory that holds the Reddyproc-ready files produced by 
 # tvan_L1_preprocess.R
-DirOutBase <- "~/Downloads/Tvan_out/Reddy_proc_readyData"
+user = 'wwieder'
+if (user ==  'wwieder') {
+  DirOutBase <- paste0("~/Desktop/Working_files/Niwot/Tvan_out_new")
+  east_data_fp <- paste0(DirOutBase,"/Reddy_proc_readyData/tvan_East_2007-08-29_09-00-00_to_2020-04-09_18-00-00_flux_P_reddyproc.txt")
+  # The location of the west tvan data filepath, use "", if tower = "East"
+  west_data_fp <- paste0(DirOutBase,"/Reddy_proc_readyData/tvan_West_2007-05-09_19-00-00_to_2020-08-11_00-30-00_flux_P_reddyproc.txt")
+}  else {
+  DirOutBase <- "~/Downloads/Tvan_out/Reddy_proc_readyData"
+  east_data_fp <- paste0(DirOutBase,"/tvan_East_2007-08-29_09-00-00_to_2020-04-09_18-00-00_flux_P_reddyproc.txt")
+  west_data_fp <-  paste0(DirOutBase,"/tvan_West_2007-05-09_19-00-00_to_2020-08-11_07-30-00_flux_P_reddyproc.txt")
+}
 
 #### Tower Use Options ####
 # What tvan tower should be used?
 tower <- "Both" # Options are "East", "West", or "Both"
 # if "Both" the both towers will be processed at once
 
-#### Tvan data location ####
-# Only necessary to set the tower that you are processing, or 
-# both, if tower = "Both"
-# The location of the east tvan data filepath, use "", if tower = "West"
-east_data_fp <- "~/Downloads/Tvan_out/Reddy_proc_readyData/tvan_East_2007-08-29_09-00-00_to_2020-04-09_18-00-00_flux_P_reddyproc.txt"
-# The location of the west tvan data filepath, use "", if tower = "East"
-west_data_fp <- "~/Downloads/Tvan_out/Reddy_proc_readyData/tvan_West_2007-05-09_19-00-00_to_2020-08-11_07-30-00_flux_P_reddyproc.txt"
-
 ##############################################################################
 # Static workflow parameters - these are unlikely to change
 ##############################################################################
 
 #Append the site to the base output directory
-DirOut <- paste0(DirOutBase, "/", "supp_filtering")
+DirOut <- paste0(DirOutBase, "/supp_filtering")
 plots_dir <- paste0(DirOut, "/plots")
+
 
 #Check if directory exists and create if not
 if(!dir.exists(DirOut)) dir.create(DirOut, recursive = TRUE)
@@ -186,11 +190,10 @@ getCurrentVersion <- function(edi_id){
 #function to download the EML file from EDI
 getEML <- function(packageid){
   require(magrittr)
-  myurl <- paste0("https://portal.lternet.edu/nis/metadataviewer?packageid=",
+  myurl<-paste0("https://portal.edirepository.org/nis/metadataviewer?packageid=",
                   packageid,
                   "&contentType=application/xml")
-  #myeml<-xml2::download_html(myurl)%>%xml2::read_xml()%>%EML::read_eml()
-  myeml <- xml2::read_xml(paste0("https://portal.lternet.edu/nis/metadataviewer?packageid=",
+  myeml<-xml2::read_xml(paste0("https://portal.edirepository.org/nis/metadataviewer?packageid=",
                                  packageid,
                                  "&contentType=application/xml")) %>% EML::read_eml()
 }
@@ -730,21 +733,23 @@ if (makeplots) {
 # Download Saddle Met data
 message(paste0("Downloading Saddle Met data, please cite: \n",
                "Morse, J. and M. Losleben. 2019. Climate data for saddle data loggers (CR23X and CR1000), 2009 - ongoing, hourly. ver 3. Environmental Data Initiative. https://doi.org/10.6073/pasta/4f416341d978376c0205c86bc88d90ba (Accessed ",Sys.Date(), ")"))
+
 saddle_met_data_fp <- download_EDI(edi_id = saddle_met_data, 
-                                   dest_dir = paste0(DirOut, 
-                                                     "/saddle_met_data"),
+                                   dest_dir = paste0(DirOut,"/saddle_met_data"),
                                    getNewData = TRUE)
 
 colclasses <- gsub("Date", "character", saddle_met_data_fp$colclasses)
-sadd_met <- read.csv(file = saddle_met_data_fp$csv,
-                     colClasses = colclasses)
+sadd_met <- read.csv(file = saddle_met_data_fp$csv)#, 
+#                     colClasses = colclasses, na.strings='NaN')
 
 ##############################################################################
 # Filter saddle met data and compare with Tvan Tair
 ##############################################################################
 sadd_met$date_time_start <- as.POSIXct(as.character(sadd_met$date_time_start),
                                        tz = "MST", format = "%Y-%m-%d %H:%M")
-
+sadd_met %>% 
+  filter(date_time_start > as.POSIXct("2019-01-01 01:00:00")) %>%
+  select(date_time_start, airtemp_avg)
 
 saddle_met_sub <- subset(sadd_met, date_time_start >= start_date)
 
