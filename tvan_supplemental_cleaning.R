@@ -41,7 +41,7 @@ options(stringsAsFactors = F)
 ##############################################################################
 #### Ploting options ####
 # Should plots be made?
-makeplots <- FALSE # TRUE = default
+makeplots <- TRUE # TRUE = default
 
 #### Output Options ####
 # The output directory for the script. It is recommended but not required that this
@@ -747,20 +747,44 @@ sadd_met <- read.csv(file = saddle_met_data_fp$csv)#,
 ##############################################################################
 sadd_met$date_time_start <- as.POSIXct(as.character(sadd_met$date_time_start),
                                        tz = "MST", format = "%Y-%m-%d %H:%M")
-sadd_met %>% 
-  filter(date_time_start > as.POSIXct("2019-01-01 01:00:00")) %>%
-  select(date_time_start, airtemp_avg)
+#sadd_met %>% 
+#  filter(date_time_start > as.POSIXct("2019-01-01 00:00:00", tz = "MST")) %>%
+#  select(date_time_start, airtemp_avg)
 
 saddle_met_sub <- subset(sadd_met, date_time_start >= start_date)
 
-# Remove missing or questionable observations and then remove the flag columns
+# 2019 data should be mean of  airtemp_hmpX_avg, where  flags are OK
 
+saddle_met_sub1 <- saddle_met_sub %>%
+  filter(date_time_start > as.POSIXct("2019-01-01 00:00:00", tz = "MST")) %>%
+  select(date_time_start, airtemp_avg, 
+         airtemp_hmp1_avg, flag_airtemp_hmp1_avg,
+         airtemp_hmp2_avg, flag_airtemp_hmp2_avg,
+         airtemp_hmp3_avg, flag_airtemp_hmp3_avg) %>%
+  mutate(airtemp_hmp1_avg = ifelse(flag_airtemp_hmp1_avg %in% c("m", "mq", "q"), 
+                                   NA, airtemp_hmp1_avg)) %>%
+  mutate(airtemp_hmp2_avg = ifelse(flag_airtemp_hmp2_avg %in% c("m", "mq", "q"), 
+                                   NA, airtemp_hmp2_avg)) %>%
+  mutate(airtemp_hmp3_avg = ifelse(flag_airtemp_hmp3_avg %in% c("m", "mq", "q"), 
+                                   NA, airtemp_hmp3_avg)) %>%
+  group_by(date_time_start) %>%
+  summarise(airtemp_avg = mean(c(airtemp_hmp1_avg,airtemp_hmp2_avg,airtemp_hmp3_avg), na.rm=T))# %>%
+  #select(date_time_start, airtemp_avg, airtemp_hmp1_avg)
+
+plot(saddle_met_sub1)
+
+# Remove missing or questionable observations and then remove the flag columns
 saddle_met_sub2 <- saddle_met_sub %>%
+  filter(date_time_start < as.POSIXct("2019-01-01 00:00:00", tz = "MST")) %>%
   select(date_time_start, airtemp_avg, flag_airtemp_avg) %>%
   mutate(airtemp_avg = ifelse(flag_airtemp_avg %in% c("m", "mq", "q"), 
                               NA, airtemp_avg)) %>%
   select(date_time_start, airtemp_avg)
 
+#plot(saddle_met_sub2)
+saddle_met_sub2 = bind_rows(saddle_met_sub2, saddle_met_sub1)
+# Join airtemp_avg & airtemp_hmp_avg, usinig later for year > 2019
+plot(saddle_met_sub2)
 
 ## Interploate met data from hourly to 1/2 hourly
 sadd_met_alltime <- posix_complete %>%
@@ -877,3 +901,4 @@ if (exists("tvan_twr_west")) {
 }
 
 print('Finished cleaning Tvan Data, now create .nc files using flow.lter.clm.R')
+
