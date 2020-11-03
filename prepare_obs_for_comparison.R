@@ -14,6 +14,7 @@
 ##############################################################################
 # Dependencies
 ##############################################################################
+rm(list = ls())
 
 #Call the R HDF5 Library
 packReq <- c("magrittr","EML", "dplyr", "ggplot2", 
@@ -27,9 +28,6 @@ lapply(packReq, function(x) {
     library(x, character.only = TRUE)
   }})
 
-#Install packages from github repos
-# devtools::install_github(c("NEONScience/eddy4R/pack/eddy4R.base", "NEONScience/NEON-utilities/neonUtilities"))
-# 
 #Setup Environment
 options(stringsAsFactors = F)
 
@@ -37,26 +35,31 @@ options(stringsAsFactors = F)
 #Workflow parameters
 ##############################################################################
 #### Output Options ####
-# The version data for the FP standard conversion processing
-ver <- paste0("v",format(Sys.time(), "%Y%m%dT%H%m"))
-# Base directory for output
-DirOutBase <- paste0("~/Downloads/OBS/data",ver)
+# 1) Base directory for output
+# 2) Directory to download observation data to 
+# 3) Location of the tvan data that was used to create forcing files
+#      location of tvan data with soil information; Note: Tvan soil temperature data
+#      probes from East tower do not work, so please give west tower tvan data location
+# I'm trying to make it so we don't have to keep changing this...
 
-#### Download and input options ####
-# Directory to download precipitation and radidation data to
-DirDnld = "~/Downloads/lter_obs"
+user = 'wwieder'
+if (user ==  'wwieder') {
+  DirOutBase <- paste0("~/Desktop/Working_files/Niwot/CLM/OBS/data")
+  DirDnld = "~/Desktop/Working_files/Niwot/CLM/OBS/NWT_lter_obs_downloads"
+  tvan_data_fp <- "~/Desktop/Working_files/Niwot/CLM/datav20200824T1008/data/tvan_forcing_data_precip_mods_both_towers_2007-05-11_2020-08-11.txt"
+  tvan_data_soil <- "~/Desktop/Working_files/Niwot/Tvan_out_new/filtered_data/tvan_West_2007-05-09_19-00-00_to_2020-08-11_00-30-00_flux_P.csv"
+  
+} else { 
+  DirOutBase <- paste0("~/Downloads/OBS/data") 
+  DirDnld = "~/Downloads/CLM/OBS/NWT_lter_obs_downloads"
+  tvan_data_fp <- "~/Downloads/CLM/datav20200816T1808/data/tvan_forcing_data_precip_mods_both_towers_2007-05-11_2020-08-11.txt"
+  tvan_data_soil <- "~/Desktop/Working_files/Niwot/Tvan_out_new/filtered_data/tvan_West_2007-05-09_19-00-00_to_2020-08-11_00-30-00_flux_P.csv"
+}
 
-# Should a newer version of precip data be automatically 
-# downloaded if one is available?
+# Should a newer version of EDI data be downloaded if one is available?
 getNewData = TRUE
 
-#### Tvan data location ####
-# Location of the tvan data that was used to create forcing files
-tvan_data_fp <- "~/Downloads/CLM/datav20200816T1808/data/tvan_forcing_data_precip_mods_both_towers_2007-05-11_2020-08-11.txt"
 
-# location of tvan data with soil information; Note: Tvan soil temperature data
-# probes from East tower do not work, so please give west tower tvan data location
-tvan_data_soil <- "~/Downloads/Tvan_out_new/filtered_data/tvan_West_2007-05-09_19-00-00_to_2020-08-11_00-30-00_flux_P.csv"
 
 ##############################################################################
 # Static workflow parameters - these are unlikely to change
@@ -98,11 +101,11 @@ getCurrentVersion <- function(edi_id){
 #function to download the EML file from EDI
 getEML <- function(packageid){
   require(magrittr)
-  myurl <- paste0("https://portal.lternet.edu/nis/metadataviewer?packageid=",
+  myurl <- paste0("https://portal.edirepository.org/nis/metadataviewer?packageid=",
                   packageid,
                   "&contentType=application/xml")
   #myeml<-xml2::download_html(myurl)%>%xml2::read_xml()%>%EML::read_eml()
-  myeml <- xml2::read_xml(paste0("https://portal.lternet.edu/nis/metadataviewer?packageid=",
+  myeml <- xml2::read_xml(paste0("https://portal.edirepository.org/nis/metadataviewer?packageid=",
                                  packageid,
                                  "&contentType=application/xml")) %>% EML::read_eml()
 }
@@ -289,7 +292,7 @@ saddle_prod_data_fp <- download_EDI(edi_id = saddle_productivity_data,
 
 # Download saddle sensor network veg community
 message(paste0("Downloading Saddle Productivity data, please cite: \n",
-               "CITATION NEEDED (Accessed ",Sys.Date(), ")"))
+               "Elwood, K., W. Reed, and Niwot Ridge LTER. 2020. Plot vegetation surveys at the Sensor Network, 2017 to ongoing ver 2. Environmental Data Initiative. https://doi.org/10.6073/pasta/1b5e99d522f986c2244bf5a25e69d3f5 (Accessed ",Sys.Date(), ")"))
 saddle_sensntwk_veg_data_fp <- download_EDI(edi_id = saddle_sensntwk_veg, 
                                     dest_dir = paste0(DirDnld, 
                                                       "/saddle_sensntwk_veg_data"),
@@ -308,6 +311,9 @@ tvan_comb_units <- as.character(unname(unlist(tvan_comb_names[1,])))
 
 colnames(tvan_comb) <- names(tvan_comb_names)
 
+# convert flux GPP (umol/m2/s to g/m2/s, as in CLM)
+tvan_comb$GPP = tvan_comb$GPP * 1e-6 * 12.01
+tvan_comb_units[1]  =  'gC m-2 s-1'
 ################################################################################
 # Clean and format Tvan Flux data
 ################################################################################
@@ -356,7 +362,16 @@ tvan_comb_mod.daily <- tvan_comb_mod %>%
   mutate(ObsSim = "Obs") %>%
   mutate(veg_com = "FF")
 
-
+# Get July data
+jul_30_min_tvan <- tvan_comb_mod %>% 
+  select(-timestamp, -date) %>%
+  select(Hour, DoY, Year, month, all_of(diurnal_flx_vars)) %>%
+  filter(month == 7) %>%
+  group_by(Hour) %>%
+  summarize_at(all_of(diurnal_flx_vars),
+               list(houravg = mean, hoursd = sd), na.rm = TRUE) %>%
+  mutate(ObsSim = "Obs") %>%
+  mutate(veg_com = "FF")
 
 ################################################################################
 # Load Saddle Catchment Sensor Network Data
@@ -455,9 +470,11 @@ sad_sens_10min <- sad_sens_data_all %>%
 writeLines(paste0("Collapsing 10-minute soil sensor data into 30-minute chunks, \n", 
            "this may take a while..."))
 
+# NOTE: this could probably be made more efficient if handled one file at a time. And then
+# joining the 30-minute data together after each is combined
 sad_sens_soilmoist_temp <- sad_sens_10min %>%
   # Get half-hourly averages
-  group_by(date, decimalTime) %>%
+  group_by(date, decimalTime, sensornode) %>%
   mutate(across(contains("soil"), list(~mean(., na.rm = TRUE)), 
                 .names = "mean_{col}")) %>%
   ungroup() %>%
@@ -522,7 +539,9 @@ sad_sensnet_soil <- sad_sens_soilmoist_temp %>%
   mutate(data_set = "Saddle_sensor_network_EDI_210_5cm_30cm_moisttemp_probes",
          plot = as.character(plot),
          upper_sensor_depth_cm = 5,
-         lower_sensor_depth_cm = 30)
+         lower_sensor_depth_cm = 30) %>%
+  mutate(soilmoisture_upper_avg = soilmoisture_upper_avg * 100,
+         soilmoisture_lower_avg = soilmoisture_lower_avg * 100)
 
 
 # Plotting soil moisture
@@ -579,28 +598,8 @@ tvan_soil_mod <- tvan_soil %>%
          data_set = "Tvan_West_Tower_10cm_30cm_moisttemp_probes")
 
 
-# test <- flux_P_all %>% 
-#   select(time, H) %>%
-#   mutate(timestamp = with_tz(time, "MST"),
-#          year = year(as.Date(timestamp))) %>%
-#   filter(year %in% c(2015)) %>%
-#   mutate(Hour = lubridate::hour(timestamp) + 
-#            lubridate::minute(timestamp)/60,
-#          date = lubridate::date(timestamp),
-#          month = month(date),
-#          MONgroup = if_else(month %in% c(1:6), "Jan-Jun", "Jul-Jan"),
-#          # timestamp = if_else(month %in% c(7:12), timestamp +
-#          #                        lubridate::hours(7), timestamp),
-#          year = as.factor(year(date)),
-#          Hour = lubridate::hour(timestamp) + 
-#            lubridate::minute(timestamp)/60)  %>%
-#   filter(H < 500) %>%
-#   filter(H > -250)
-# 
-# ggplot(test, aes(x = Hour, y = H)) +
-#   geom_point(aes(color = MONgroup), alpha = 0.3)
-# 
-# test
+plot(tvan_soil_mod$date, tvan_soil_mod$soiltemp_upper_avg,pch='.')
+ggplot(tvan_soil_mod, aes(x = date, y = soiltemp_upper_avg)) 
 
 
 ################################################################################
@@ -674,78 +673,9 @@ soilmoist_temp_comb_daily <- soilmoist_temp_comb %>%
          veg_com, data_information) %>%
   unique()
 
-
-# 
-# 
-# p <- ggplot(soilmoist_temp_comb_hrly %>%
-#               select(Hour, veg_com, 
-#                      all_of(c("soiltemp_upper_avg_mean",
-#                               "soiltemp_lower_avg_mean",
-#                               "soilmoisture_upper_avg_mean",
-#                               "soilmoisture_lower_avg_mean")),
-#                      all_of(c("soiltemp_upper_avg_sd",
-#                               "soiltemp_lower_avg_sd",
-#                               "soilmoisture_upper_avg_sd",
-#                               "soilmoisture_lower_avg_sd"))) %>%
-#               pivot_longer(all_of(c("soiltemp_upper_avg_mean",
-#                                "soiltemp_lower_avg_mean",
-#                                "soilmoisture_upper_avg_mean",
-#                                "soilmoisture_lower_avg_mean")),
-#                            names_to = "SoilMetricMean", values_to = "MeanValue") %>%
-#            pivot_longer(all_of(c("soiltemp_upper_avg_sd",
-#                                  "soiltemp_lower_avg_sd",
-#                                  "soilmoisture_upper_avg_sd",
-#                                  "soilmoisture_lower_avg_sd")),
-#                         names_to = "SoilMetricSD", values_to = "SDValue") %>%
-#          mutate(SoilMetricMean = gsub("_mean", "", SoilMetricMean),
-#                 SoilMetricSD = gsub("_sd", "", SoilMetricSD)) %>% 
-#          filter(SoilMetricMean == SoilMetricSD) %>% 
-#          filter(!is.na(MeanValue)) %>%
-#          filter(!is.na(SDValue)), 
-#        aes(x = Hour)) +
-#   #geom_point(aes(color = veg_com), alpha = 0.3) +
-#   geom_ribbon(aes(ymin = MeanValue-SDValue, ymax = MeanValue + SDValue,
-#                   fill = veg_com), alpha = 0.4) +
-#   geom_line(aes(y = MeanValue, color = veg_com)) +
-#   facet_wrap(SoilMetricMean~veg_com, scales = "free_y")
-# 
-# p
-# 
-# 
-# soilmoist_temp_comb_daily %>% 
-#   select(DoY, month, veg_com, 
-#          all_of(c("soiltemp_upper_avg_mean",
-#                   "soiltemp_lower_avg_mean",
-#                   "soilmoisture_upper_avg_mean",
-#                   "soilmoisture_lower_avg_mean")),
-#          all_of(c("soiltemp_upper_avg_sd",
-#                   "soiltemp_lower_avg_sd",
-#                   "soilmoisture_upper_avg_sd",
-#                   "soilmoisture_lower_avg_sd"))) %>%
-#   pivot_longer(all_of(c("soiltemp_upper_avg_mean",
-#                         "soiltemp_lower_avg_mean",
-#                         "soilmoisture_upper_avg_mean",
-#                         "soilmoisture_lower_avg_mean")),
-#                names_to = "SoilMetricMean", values_to = "MeanValue") %>%
-#   pivot_longer(all_of(c("soiltemp_upper_avg_sd",
-#                         "soiltemp_lower_avg_sd",
-#                         "soilmoisture_upper_avg_sd",
-#                         "soilmoisture_lower_avg_sd")),
-#                names_to = "SoilMetricSD", values_to = "SDValue") %>%
-#   mutate(SoilMetricMean = gsub("_mean", "", SoilMetricMean),
-#          SoilMetricSD = gsub("_sd", "", SoilMetricSD)) %>% 
-#   filter(SoilMetricMean == SoilMetricSD) %>% 
-#   filter(!is.na(MeanValue)) %>%
-#   filter(!is.na(SDValue)) %>% 
-#   mutate(date = days(DoY) + ymd("2000-01-01")) %>%
-#   ggplot(aes(x = date)) +
-#   geom_ribbon(aes(ymin = MeanValue-SDValue, ymax = MeanValue + SDValue,
-#                   fill = veg_com), alpha = 0.4) +
-#   geom_line(aes(y = MeanValue, color = veg_com)) +
-#   facet_wrap(SoilMetricMean~veg_com, scales = "free_y") +
-#   scale_x_date(date_labels = "%b", date_breaks = "1 month")
-#   
-  
+names(soilmoist_temp_comb_daily)
+ggplot(soilmoist_temp_comb_daily, aes(x = DoY)) +
+  geom_line(aes(y = soilmoisture_upper_avg_dailyavg, color = veg_com))
 
 
 ################################################################################
@@ -778,7 +708,7 @@ sad_snw_mod <- sad_snw %>%
   mutate(veg_class = ifelse(is.na(veg_com), "not available", veg_com)) %>%
   filter(!(veg_com == "not available")) %>%
   filter(veg_com %in% c("DM", "FF", "MM", "SB", "WM")) %>%
-  mutate(snow_depth = mean_depth/100,
+  mutate(snow_depth = mean_depth,
          date = as.Date(date, format = "%Y-%m-%d"),
          DoY = lubridate::yday(date),
          Year = lubridate::year(date)) %>%
@@ -794,7 +724,8 @@ sad_snw_mod <- sad_snw %>%
 sad_snw_daily <- sad_snw_mod %>%
   select(DoY, snow_depth_dailyavg, snow_depth_dailysd,
          veg_com, data_information) %>%
-  unique()
+  unique() %>%
+  rename(snow_depth_data_information = data_information)
 
 # Average the snow depth across plots of the same vegetation community, at 
 # each date
@@ -807,6 +738,7 @@ sad_snw_forc_yrs <- sad_snw_mod %>%
   select(date, DoY, Year, avg_date_depth, sd_date_depth, veg_com,
          data_information) %>%
   unique()
+
 
 
 # plot the measurements and doy averages for each community
@@ -857,10 +789,15 @@ sad_prod_mod <- sad_prod %>%
   # average subsamples
   mutate(NPP = rowMeans(select(., starts_with("subsample_")),
                     na.rm = TRUE))
+sad_prod_mod_ann <- sad_prod_mod %>%
+  group_by(year, veg_com) %>%
+  mutate(mean_NPP = mean(NPP, na.rm = TRUE),
+         sd_NPP = sd(NPP, na.rm = TRUE))
+  
 
 
 # sad_prod_mod %>%
-#   ggplot(aes(x = veg_class, y = NPP)) +
+#   ggplot(aes(x = veg_com, y = NPP)) +
 #   geom_boxplot(fill = NA) +
 #   geom_point(position = position_jitter(width = rel(0.3)))
 
@@ -883,19 +820,7 @@ sad_prod_mod <- sad_prod %>%
 ################################################################################
 # Reformat data
 ################################################################################
-# Final list of variables (monthly mean and SD):
-# FSH - H tvan; hourly averages/sd by month group
-# RN - Tvan Rn; hourly averages/sd by month group
-# LH - LE from flux data; hourly averages/sd by month group
-# GPP - GPP (from flux data); hourly averages/sd by month group
-# Tvan: Soil temp and moisture GPP; daily mean across all years
-# FGR - "G data" ground flux heat flux into soil/snow
-# Tair - air temp
-# SOILLIQ - Soil moisture
-# ANPP/BNPP - productivity above and belowground - mayonly be estimates yearly
-# Saddle grid ANPP
-# Root biomass
-# Snow_depth- 
+# Reformatting several data frames to better match with simulation data
 
 # Data frame 1: 
 # Rename flux variables to match tvan
@@ -910,19 +835,27 @@ tvan_comb_mod.diurnal_seasonal <- tvan_comb_mod.diurnal_seasonal %>%
          EFLX_LH_TOT_hoursd = LE_hoursd)
 
 
+# July flux summary
+jul_30_min_tvan <- jul_30_min_tvan %>%
+  rename(RNET_houravg = radNet_houravg,
+         RNET_hoursd = radNet_hoursd,
+         FSH_houravg = H_houravg,
+         FSH_hoursd = H_hoursd,
+         EFLX_LH_TOT_houravg = LE_houravg,
+         EFLX_LH_TOT_hoursd = LE_hoursd)
 
 # Data frame 2: 
 # Daily averages for each vegetation community
 # Variables: GPP (tvan), SoilTemp (tvan/sensor network),
 # Soil Moisture (tvan/sensor network), snow depth (saddle grid), 
-daily_soilmoisttemp_gpp <- soilmoist_temp_comb_daily %>% 
+daily_soilmoisttemp_gpp_snwdp <- soilmoist_temp_comb_daily %>% 
   rename(soilmoisture_data_info = data_information) %>%
+  # join with tvan GPP data
   left_join(tvan_comb_mod.daily, by = c("DoY", "veg_com")) %>%
+  # join with snow depth data
+  left_join(sad_snw_daily, by = c("DoY", "veg_com")) %>%
   mutate(ObsSim = "Obs")
-
-# Data frame 3: 
-# Yearly data for each vegetation community
-# productivity
+  
 
 
 
@@ -934,17 +867,56 @@ daily_soilmoisttemp_gpp <- soilmoist_temp_comb_daily %>%
 ################################################################################
 # For each time-series of data, write out units and data
 # Write out halfhourly fluxes:
+writeLines("Writing out diurnal, daily, and annual data.")
 
+# Diurnal-seasonal data
 write.table(tvan_comb_mod.diurnal_seasonal, 
             file = paste0(DirOutBase, "/Diurnal_seasonal_summaries_", "tvan_flux.txt"),
             row.names = FALSE, sep = "\t")
 
+# Diurnal-seasonal data
+write.table(jul_30_min_tvan, 
+            file = paste0(DirOutBase, "/July_flux_summary_", "tvan_flux.txt"),
+            row.names = FALSE, sep = "\t")
 
-# DoY data
-DirOutBase <- "~/Downloads/OBS/datav20200820T2108" 
-write.table(daily_soilmoisttemp_gpp, 
-            file = paste0(DirOutBase, "/Daily_soilmoisture_soiltemp_gpp_summaries.txt"),
+# DoY data 
+write.table(daily_soilmoisttemp_gpp_snwdp, 
+            file = paste0(DirOutBase, 
+                          "/Daily_soilmoisture_soiltemp_gpp_snwdpth_summaries.txt"),
             row.names = FALSE, sep = "\t")
 
 
 # Annual data
+write.table(sad_prod_mod_ann, 
+            file = paste0(DirOutBase, 
+                          "/annual_saddle_grid_NPP_summaries.txt"),
+            row.names = FALSE, sep = "\t")
+
+# Unsummarized data
+writeLines("Writing out data that has not been summarized by time.")
+
+# Saddle sensor network soil data
+write.table(sad_sensnet_soil, 
+            file = paste0(DirOutBase, 
+                          "/sensor_network_soil_data_30_min.txt"),
+            row.names = FALSE, sep = "\t")
+
+# Tvan soil data
+write.table(tvan_soil_mod,
+            file = paste0(DirOutBase, 
+                          "/tvan_soil_data_30_min.txt"),
+            row.names = FALSE, sep = "\t")
+
+# Snow depth data
+write.table(sad_snw_forc_yrs,
+            file = paste0(DirOutBase, 
+                          "/saddle_grid_snow_depth_data_biweekly.txt"),
+            row.names = FALSE, sep = "\t")
+
+# Productivity
+write.table(sad_prod_mod,
+            file = paste0(DirOutBase, 
+                          "/saddle_grid_productivity_data.txt"),
+            row.names = FALSE, sep = "\t")
+
+print('--- finished  with script ---')
