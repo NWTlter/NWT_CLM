@@ -47,6 +47,7 @@ mm_ncdf_fp <- "clm50bgc_NWT_mm_newPHS_lowSLA.clm2.h1.2008-2019.nc" # moist meado
 wm_ncdf_fp <- "clm50bgc_NWT_wm_newPHS_lowSLA.clm2.h1.2008-2019.nc" # wet meadow
 sb_ncdf_fp <- "clm50bgc_NWT_sb_newPHS_lowSLA.clm2.h1.2008-2019.nc" # snow bed
 
+
 #### Extra Variable Choice ####
 # The names of any optional extra variables the user would like to extract
 # WARNING: No conversions are made to the units of user-specified optional 

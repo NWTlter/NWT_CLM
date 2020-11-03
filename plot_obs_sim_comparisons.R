@@ -45,6 +45,7 @@ if (user ==  'wwieder') {
 # This is the same as the "case_name" from flow.sim.R
 sim_name <- "clm50bgc_NWT_newPHS_lowSLA" #'clm50bgc_NWT_base
 
+
 #### Input options ####
 # Simulation data directory (output from flow.sim.R script)
 DirSimIn = paste0(DirBase,'SIM/',sim_name)
@@ -53,7 +54,8 @@ DirSimIn = paste0(DirBase,'SIM/',sim_name)
 DirObsIn = paste0(DirBase,'OBS/data')
 
 # What vegetation community are we working with?
-vegetation_com <- "SB" # Options: "FF", "DM", "WM", "MM", "SB", NA
+vegetation_com <- "FF" # Options: "FF", "DM", "WM", "MM", "SB", NA
+
 
 
 ##############################################################################
@@ -324,3 +326,5 @@ ggsave(snow_depth_plot,
        file = paste0(DirOut, "/snow_depth_plot.png"))
 
 print('---- finished plotting ----')
+
+

@@ -64,6 +64,7 @@ if (user ==  'wwieder') {
 tower <- "Both" # Options are "East", "West", or "Both"
 # if "Both" the both towers will be processed at once
 
+
 ##############################################################################
 # Static workflow parameters - these are unlikely to change
 ##############################################################################
@@ -71,7 +72,6 @@ tower <- "Both" # Options are "East", "West", or "Both"
 #Append the site to the base output directory
 DirOut <- paste0(DirOutBase, "/supp_filtering")
 plots_dir <- paste0(DirOut, "/plots")
-
 
 #Check if directory exists and create if not
 if(!dir.exists(DirOut)) dir.create(DirOut, recursive = TRUE)
@@ -194,6 +194,7 @@ getEML <- function(packageid){
                   packageid,
                   "&contentType=application/xml")
   myeml<-xml2::read_xml(paste0("https://portal.edirepository.org/nis/metadataviewer?packageid=",
+
                                  packageid,
                                  "&contentType=application/xml")) %>% EML::read_eml()
 }
@@ -742,6 +743,7 @@ colclasses <- gsub("Date", "character", saddle_met_data_fp$colclasses)
 sadd_met <- read.csv(file = saddle_met_data_fp$csv)#, 
 #                     colClasses = colclasses, na.strings='NaN')
 
+
 ##############################################################################
 # Filter saddle met data and compare with Tvan Tair
 ##############################################################################
@@ -776,6 +778,7 @@ plot(saddle_met_sub1)
 # Remove missing or questionable observations and then remove the flag columns
 saddle_met_sub2 <- saddle_met_sub %>%
   filter(date_time_start < as.POSIXct("2019-01-01 00:00:00", tz = "MST")) %>%
+
   select(date_time_start, airtemp_avg, flag_airtemp_avg) %>%
   mutate(airtemp_avg = ifelse(flag_airtemp_avg %in% c("m", "mq", "q"), 
                               NA, airtemp_avg)) %>%
@@ -900,5 +903,4 @@ if (exists("tvan_twr_west")) {
               row.names = FALSE, sep = "\t")
 }
 
-print('Finished cleaning Tvan Data, now create .nc files using flow.lter.clm.R')
-
+print('Finished cleaning Tvan Data, now create .nc files using prepare_forcings_for_clm.R')

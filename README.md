@@ -3,23 +3,23 @@ This repoistory contains scripts that are necessary for running and analyzing da
 
 ## Niwot scripts workflow:
 
-1. [Clean L1 data](#clean-l1-data) from tvan data using `tvan_supplemental_cleaning.R`*
-2. [Gap fill and generate .nc forcings](#generate-atmospheric-forcings-for-clm) with `flow.lter.clm.R` 
+1. [Clean L1 data](#clean-l1-data) from tvan data using `clean_tvan_data.R`*
+2. [Gap fill and generate .nc forcings](#generate-atmospheric-forcings-for-clm) with `prepare_forcings_for_clm.R` 
 3. [Run the model](#run-the-model) at Niwot Ridge by following the instructions in `CLM_instructions.md` 
-4. [Download and format observations](#download-and-format-observations) for comparison with the model using `flow.obs.R`
-5. [Format model output](#format-model-output) for comparisons with observations using `flow.sim.R` 
-6. [Create comparison plots](#comparing-model-and-obs) between simulation and observations with `Obs_sim_com_plots.R`
+4. [Download and format observations](#download-and-format-observations) for comparison with the model using `prepare_obs_for_comparison.R`
+5. [Format model output](#format-model-output) for comparisons with observations using `prepare_sim_for_comparison.R` 
+6. [Create comparison plots](#comparing-model-and-obs) between simulation and observations with `plot_obs_sim_comparisons.R`
 
 *This script will be rendered obsolete once the Tvan data is available on AmeriFlux 
 
-![NWT_CLM workflow overview](./images/Conceptual_diagram.png)
+![**Figure 1**: NWT_CLM workflow overview](./images/Conceptual_diagram.png)
 
 
 
 ## How to run each script
 
 # Clean L1 data
-### 1. `tvan_supplemental_cleaning.R` 
+### 1. `clean_tvan_data.R` 
 This script cleans up Tvan L1 data that has been produced with the Niwot LTER `tvan_L1_preprocess.R` script from the Niwot LTER's repository. It is a temporary script meant to add a few extra cleaning steps to the L1 tvan data, until that data can be uploaded to AmeriFlux. The script reads in ReddyProc-ready data output by the `tvan_L1_preprocess.R` script, filters several problem spots, plots yearly comparisons between the filtered and unfiltered data, downloads Saddle Met data from EDI to fill in the gaps in air temperature after 2016, and writes out the data to two files called `tvan_[tower]_[start_timestamp]_to_[end_endtimestamp]_flux_P_reddyproc_cleaned.txt`
 
 #### Inputs
@@ -61,12 +61,24 @@ File structure:
     └── saddle_met_data
 
 ```
+
+#### Script Status
+This script is currently necessary to further clean the tvan forcings in preparation for `prepare_forcings_for_clm.R` in addition to gap-filling one tower with the other. After a finalized version of the tvan data is up on Ameriflux, this script may no longer be necessary or may be used only for combining the two tower's data together to fill any gaps. 
+
+The proposed modifications for this script once the Tvan data are on Ameriflux are:  
+
+1. Copy the `download_amflx()` function and `Handle Radiation data` section from `prepare_forcings_for_clm.R` to this script
+
+2. Modify the copied as needed to automatically download and read-in the NR-2/NR-3 data (tvan east and west towers).
+
+3. Verify that the rest of the script as written works with the new format of tvan data.
+
 [top](#nwt_clm)
 
 
 # Generate atmospheric forcings for CLM
-### 2. `flow.lter.clm.R`
-The `flow.lter.clm.R` script generates atmospheric forcings for CLM from Niwot Ridge. It assembles the forcings with observational data from three sources. Daily precipitation data from the saddle that has been distributed into half-hourly data according to the method laid out in Wieder et al. 2017, half-hourly radiation data from the NR1 AmeriFlux tower, the rest of the forcings from the Tvan towers at Niwot.
+### 2. `prepare_forcings_for_clm.R`
+The `prepare_forcings_for_clm.R` script generates atmospheric forcings for CLM from Niwot Ridge. It assembles the forcings with observational data from three sources. Daily precipitation data from the saddle that has been distributed into half-hourly data according to the method laid out in Wieder et al. 2017, half-hourly radiation data from the NR1 AmeriFlux tower, the rest of the forcings from the Tvan towers at Niwot.
 
 | <span> |
 | :--- |
@@ -157,8 +169,22 @@ Options currently under development:
         └── yearly_gap_plots_2020.png
 
 ```
-[top](#nwt_clm)
 
+#### Script Status
+This script is mostly done, but could be improved by including an option to automatically create simulated run-off for the moist meadow community. The option is currently written into the user parameters as a place-holder, but is not implemented. The script expects the run-off data to be formatted as follows:
+
+>With this option the user would provide a data file from a simulated Moist Meadow run that
+contains two columns, a timestamp column (every timestamp represents the state at the *end* of the 30 minute sampling period) called "timestamp", and a column containing the runoff amounts in mm/s from a Moist Meadow  simulation. If provided, this data will be added to the Wet meadow precipitation. If not provided, wet meadow precipitation will be 75% of observed precipitation without any added runnoff. 
+
+Steps to implement: 
+
+ 1. Proposed but untested code for this option exists in the script at lines 1727-1733 in the `Prepare 4 different precipitation regimes for the different vegetation communities` section. It needs to be tested and verified to be working.
+
+ 2. Currently there is no code to load in the simulated runoff file, that needs to be written. Ideally this data would be loaded in at the beginning of the `Prepare 4 different precipitation regimes for the different vegetation communities` section.
+
+ 3. Another possible improvement would be the creation of a function to extract the simulated runoff from a netcdf file. Currently the code as written expects a data-frame and the production of that dataframe is left to the user.
+
+[top](#nwt_clm)
 
 # Run the model
 ### 3. `CLM_instructions`
@@ -173,7 +199,7 @@ After running the model we'll compare with observations. First:
 
 
 # Download and format observations
-### 4. `flow.obs.R`
+### 4. `prepare_obs_for_comparison.R`
 Workflow for collating NIWOT LTER data in preparation to compare observations to simulated data. The purpose of this script is to read in observational data from Niwot, and summarize it by three time-levels: Diurnal by season, daily (day of year), and annually.
 
 #### Inputs
@@ -190,7 +216,7 @@ Workflow for collating NIWOT LTER data in preparation to compare observations to
  - `DirOutBase` - the base location of the output data
  - `DirDnld` - Directory to download observation data to
  - `getNewData` - option to download the newest version of EDI data if one is available. Options: `TRUE` or `FALSE`
- - `tvan_data_fp` - Location of the tvan data that was used to create forcing files; this should be the "precip_mods" text file generated by `flow.lter.clm.R`. It must be ReddyProc-processed data because GPP is taken from this dataset. 
+ - `tvan_data_fp` - Location of the tvan data that was used to create forcing files; this should be the "precip_mods" text file generated by `prepare_forcings_for_clm.R`. It must be ReddyProc-processed data because GPP is taken from this dataset. 
  - `tvan_data_soil` - Location of tvan data with soil information; This is the "Ameriflux-ready" version of the tvan data; Eventually it will need to be replaced with downloading the AmeriFlux Tvan data, once that data has been uploaded to AmeriFlux. Note: Tvan soil temperature data probes from East tower do not work, so please give west tower tvan data location
 
 
@@ -201,11 +227,20 @@ This script outputs three files, the Diurnal-seasonal, daily, and yearly summari
  - Daily Data: Daily (day-of-year) means and standard deviations of soil moisture, soil temperature, and GPP; Daily snow depth at each plot.
  - Annual data: Annual means and standard deviations of production and biomass data
 
+#### Script Status
+This script could be improved by expanding it to include observations of saddle grid productivity data and creating as summary of annual GPP/NPP/ANPP observations (as was done in Wieder et al. 2017 fig 5). There is some code for this in the `Handle Saddle Grid Productivity data` section, but it is not currently used by the downstream plotting script, and the units are likely incorrect. Determining how best to separate the available data into GPP/NPP/ANPP is also another challenge. 
+
+There also appear to be some bugs with the Soil Moisture and Temperature readings. In particular the fell field soil moisture and temperature are likely unreliable (they come from the Tvan measurements).
+
+Other observations that could be added but are not currently in the code at all: Growing season length, soil moisture stress, delta N limitation, biomass. Determining what long term data to use for these observations, downloading it, and converting it into a useable form, will be the next step to bring this script up to scratch.
+
+In general, there is a lot of future work to be done on this script before we can recreate all of the plots in Wieder et al. 2017 and beyond.
+
+
 [top](#nwt_clm)
 
-
 # Format model output
-### 5. `flow.sim.R`
+### 5. `prepare_sim_for_comparison.R`
 The goal of this script is to read in netcdf output data from a CLM model simulation and convert it into tab-delimited files that can be compared to observational data. The data produced is half-hourly but is also summarized at three levels: Diurnal by season, daily (day of year), and annually. Depending on the vegetation community a different level of soil will be used for the upper layer of soil moisture and soil temperature data. This is because Tvan soil data is collected at 10cm while the saddle sensor network soil data is collected at 5cm. 
 
 #### Inputs
@@ -249,29 +284,42 @@ A folder in the base output directory named after the case_name with:
 
 Note: For outputs 1-4, data from all available vegetation communities are concatenated and saved to a single file.
 
+#### Script Status
+This script is listed as "Done". 
+
 [top](#nwt_clm)
 
 
 # Comparing model and obs
-### 6. `Obs_sim_com_plots.R` 
+### 6. `plot_obs_sim_comparisons.R` 
 This is a script that creates plots comparing observation and simulation data after the style of Wieder et al. 2017
 
 #### Input
 
- - The output from `flow.sim.R`
- - The output from `flow.obs.R`
+ - The output from `prepare_sim_for_comparison.R`
+ - The output from `prepare_obs_for_comparison.R`
 
 #### User Options
 
  - `DirOutBase` - the output directory for the script
  - `sim_name` - the simulation name (for organizing output and naming outputs)
- - `DirSimIn` - the netcdf-named subdirectory containing the outputs from `flow.sim.R`
- - `DirObsIn` - the version-named subdirectory containing the outputs from `flow.obs.R`
+ - `DirSimIn` - the netcdf-named subdirectory containing the outputs from `prepare_sim_for_comparison.R`
+ - `DirObsIn` - the version-named subdirectory containing the outputs from `prepare_obs_for_comparison.R`
  - `vegetation_com` - the vegetation community that is being compared. Options: "FF", "DM", "WM", "MM", "SB", NA;
  
 
 #### Outputs
 
 3 plots comparing the fluxes, soil moisture data, and snow-depth data from the simulation to observations. 
+
+#### Script Status
+This script is listed as "can be improved". It can primarily be improved by re-creating figures 5-7 of Wieder et al. 2017 (however most of these plots necessitate changes to `prepare_obs_for_comparison.R`):
+
+ - A comparison of primary productivity outputs (GPP/NPP/ANPP) (Fig 5 of Wieder et al. 2017)
+ - Plots of biomass, growing season length, N-limitation, and soil moisture stress (Fig 6 & 7 of Wieder et al. 2017). 
+
+In addition to the plots mentioned above, only some of the plots created will compare across all vegetation community types. Ideally, the script would be modified so that each plot could be like the snow depth plot, where all communities are compared to each other. 
+
+Finally, there are a number of plotting aesthetics that could be improved.  
 
 [top](#nwt_clm)

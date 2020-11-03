@@ -104,12 +104,14 @@ east_data_fp <- paste0(DirIN,"tvan_East_2007-05-10_00-30-00_to_2020-08-11_flux_P
 # The location of the west tvan data filepath, use "", if tower = "East"
 west_data_fp <- paste0(DirIN,"tvan_West_2007-05-10_00-30-00_to_2020-08-11_flux_P_reddyproc_cleaned.txt")
 
+
 #### Simulated Runoff Option ####
 # WARNING THIS FEATURE IS UNTESTED; CHANGE AT YOUR OWN RISK
 # The user can provide a data file from a simulated Moist Meadow run that
 # contains two columns, a timestamp column (every timestamp represents the
 # state at the *end* of the 30 minute sampling period) called "time",
 # and a column containing the QRUNOFF amounts in mm/s from a Moist Meadow 
+
 # simulation. If provided, this data will be added to the Wet meadow 
 # precipitation. If not provided, wet meadow precipitation will be 75% of 
 # observed precipitation.
@@ -181,6 +183,7 @@ getEML <- function(packageid){
                 "&contentType=application/xml")
   #myeml<-xml2::download_html(myurl)%>%xml2::read_xml()%>%EML::read_eml()
   myeml<-xml2::read_xml(paste0("https://portal.edirepository.org/nis/metadataviewer?packageid=",
+
                                packageid,
                                "&contentType=application/xml")) %>% EML::read_eml()
 }
@@ -1748,6 +1751,7 @@ if(simulated_runoff_present){
     mutate(PRECTmms_WM = PRECTmms_WM + QRUNOFF ) %>%
     select(-QRUNOFF)
 }
+
 
 # Write out modified precipitation data
 twr <- ifelse(tower == "Both", "both_towers", paste0(tower, "_tower"))
