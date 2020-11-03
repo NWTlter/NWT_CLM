@@ -12,7 +12,7 @@ This repoistory contains scripts that are necessary for running and analyzing da
 
 *This script will be rendered obsolete once the Tvan data is available on AmeriFlux 
 
-![NWT_CLM workflow overview](./images/Conceptual_diagram.png)
+![**Figure 1**: NWT_CLM workflow overview](./images/Conceptual_diagram.png)
 
 
 
@@ -61,6 +61,18 @@ File structure:
     └── saddle_met_data
 
 ```
+
+#### Script Status
+This script is currently necessary to further clean the tvan forcings in preparation for `prepare_forcings_for_clm.R` in addition to gap-filling one tower with the other. After a finalized version of the tvan data is up on Ameriflux, this script may no longer be necessary or may be used only for combining the two tower's data together to fill any gaps. 
+
+The proposed modifications for this script once the Tvan data are on Ameriflux are:  
+
+1. Copy the `download_amflx()` function and `Handle Radiation data` section from `prepare_forcings_for_clm.R` to this script
+
+2. Modify the copied as needed to automatically download and read-in the NR-2/NR-3 data (tvan east and west towers).
+
+3. Verify that the rest of the script as written works with the new format of tvan data.
+
 [top](#nwt_clm)
 
 
@@ -157,8 +169,22 @@ Options currently under development:
         └── yearly_gap_plots_2020.png
 
 ```
-[top](#nwt_clm)
 
+#### Script Status
+This script is mostly done, but could be improved by including an option to automatically create simulated run-off for the moist meadow community. The option is currently written into the user parameters as a place-holder, but is not implemented. The script expects the run-off data to be formatted as follows:
+
+>With this option the user would provide a data file from a simulated Moist Meadow run that
+contains two columns, a timestamp column (every timestamp represents the state at the *end* of the 30 minute sampling period) called "timestamp", and a column containing the runoff amounts in mm/s from a Moist Meadow  simulation. If provided, this data will be added to the Wet meadow precipitation. If not provided, wet meadow precipitation will be 75% of observed precipitation without any added runnoff. 
+
+Steps to implement: 
+
+ 1. Proposed but untested code for this option exists in the script at lines 1727-1733 in the `Prepare 4 different precipitation regimes for the different vegetation communities` section. It needs to be tested and verified to be working.
+
+ 2. Currently there is no code to load in the simulated runoff file, that needs to be written. Ideally this data would be loaded in at the beginning of the `Prepare 4 different precipitation regimes for the different vegetation communities` section.
+
+ 3. Another possible improvement would be the creation of a function to extract the simulated runoff from a netcdf file. Currently the code as written expects a data-frame and the production of that dataframe is left to the user.
+
+[top](#nwt_clm)
 
 # Run the model
 ### 3. `CLM_instructions`
@@ -201,8 +227,17 @@ This script outputs three files, the Diurnal-seasonal, daily, and yearly summari
  - Daily Data: Daily (day-of-year) means and standard deviations of soil moisture, soil temperature, and GPP; Daily snow depth at each plot.
  - Annual data: Annual means and standard deviations of production and biomass data
 
-[top](#nwt_clm)
+#### Script Status
+This script could be improved by expanding it to include observations of saddle grid productivity data and creating as summary of annual GPP/NPP/ANPP observations (as was done in Wieder et al. 2017 fig 5). There is some code for this in the `Handle Saddle Grid Productivity data` section, but it is not currently used by the downstream plotting script, and the units are likely incorrect. Determining how best to separate the available data into GPP/NPP/ANPP is also another challenge. 
 
+There also appear to be some bugs with the Soil Moisture and Temperature readings. In particular the fell field soil moisture and temperature are likely unreliable (they come from the Tvan measurements).
+
+Other observations that could be added but are not currently in the code at all: Growing season length, soil moisture stress, delta N limitation, biomass. Determining what long term data to use for these observations, downloading it, and converting it into a useable form, will be the next step to bring this script up to scratch.
+
+In general, there is a lot of future work to be done on this script before we can recreate all of the plots in Wieder et al. 2017 and beyond.
+
+
+[top](#nwt_clm)
 
 # Format model output
 ### 5. `prepare_sim_for_comparison.R`
@@ -249,6 +284,9 @@ A folder in the base output directory named after the case_name with:
 
 Note: For outputs 1-4, data from all available vegetation communities are concatenated and saved to a single file.
 
+#### Script Status
+This script is listed as "Done". 
+
 [top](#nwt_clm)
 
 
@@ -273,5 +311,15 @@ This is a script that creates plots comparing observation and simulation data af
 #### Outputs
 
 3 plots comparing the fluxes, soil moisture data, and snow-depth data from the simulation to observations. 
+
+#### Script Status
+This script is listed as "can be improved". It can primarily be improved by re-creating figures 5-7 of Wieder et al. 2017 (however most of these plots necessitate changes to `prepare_obs_for_comparison.R`):
+
+ - A comparison of primary productivity outputs (GPP/NPP/ANPP) (Fig 5 of Wieder et al. 2017)
+ - Plots of biomass, growing season length, N-limitation, and soil moisture stress (Fig 6 & 7 of Wieder et al. 2017). 
+
+In addition to the plots mentioned above, only some of the plots created will compare across all vegetation community types. Ideally, the script would be modified so that each plot could be like the snow depth plot, where all communities are compared to each other. 
+
+Finally, there are a number of plotting aesthetics that could be improved.  
 
 [top](#nwt_clm)
