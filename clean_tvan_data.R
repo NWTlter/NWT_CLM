@@ -20,6 +20,7 @@
 ##############################################################################
 # Dependencies
 ##############################################################################
+rm(list = ls())
 
 packReq <- c("dplyr", "ggplot2", "tidyr", "lubridate", "EML", "xts")
 
@@ -46,27 +47,30 @@ makeplots <- TRUE # TRUE = default
 # The output directory for the script. It is recommended but not required that this
 # be the same directory that holds the Reddyproc-ready files produced by 
 # tvan_L1_preprocess.R
-DirOutBase <- "~/Downloads/Tvan_out/Reddy_proc_readyData"
+user = 'wwieder'
+if (user ==  'wwieder') {
+  DirOutBase <- paste0("~/Desktop/Working_files/Niwot/Tvan_out_new")
+  east_data_fp <- paste0(DirOutBase,"/Reddy_proc_readyData/tvan_East_2007-08-29_09-00-00_to_2020-04-09_18-00-00_flux_P_reddyproc.txt")
+  # The location of the west tvan data filepath, use "", if tower = "East"
+  west_data_fp <- paste0(DirOutBase,"/Reddy_proc_readyData/tvan_West_2007-05-09_19-00-00_to_2020-08-11_00-30-00_flux_P_reddyproc.txt")
+}  else {
+  DirOutBase <- "~/Downloads/Tvan_out/Reddy_proc_readyData"
+  east_data_fp <- paste0(DirOutBase,"/tvan_East_2007-08-29_09-00-00_to_2020-04-09_18-00-00_flux_P_reddyproc.txt")
+  west_data_fp <-  paste0(DirOutBase,"/tvan_West_2007-05-09_19-00-00_to_2020-08-11_07-30-00_flux_P_reddyproc.txt")
+}
 
 #### Tower Use Options ####
 # What tvan tower should be used?
 tower <- "Both" # Options are "East", "West", or "Both"
 # if "Both" the both towers will be processed at once
 
-#### Tvan data location ####
-# Only necessary to set the tower that you are processing, or 
-# both, if tower = "Both"
-# The location of the east tvan data filepath, use "", if tower = "West"
-east_data_fp <- "~/Downloads/Tvan_out/Reddy_proc_readyData/tvan_East_2007-08-29_09-00-00_to_2020-04-09_18-00-00_flux_P_reddyproc.txt"
-# The location of the west tvan data filepath, use "", if tower = "East"
-west_data_fp <- "~/Downloads/Tvan_out/Reddy_proc_readyData/tvan_West_2007-05-09_19-00-00_to_2020-08-11_07-30-00_flux_P_reddyproc.txt"
 
 ##############################################################################
 # Static workflow parameters - these are unlikely to change
 ##############################################################################
 
 #Append the site to the base output directory
-DirOut <- paste0(DirOutBase, "/", "supp_filtering")
+DirOut <- paste0(DirOutBase, "/supp_filtering")
 plots_dir <- paste0(DirOut, "/plots")
 
 #Check if directory exists and create if not
@@ -186,11 +190,11 @@ getCurrentVersion <- function(edi_id){
 #function to download the EML file from EDI
 getEML <- function(packageid){
   require(magrittr)
-  myurl <- paste0("https://portal.lternet.edu/nis/metadataviewer?packageid=",
+  myurl<-paste0("https://portal.edirepository.org/nis/metadataviewer?packageid=",
                   packageid,
                   "&contentType=application/xml")
-  #myeml<-xml2::download_html(myurl)%>%xml2::read_xml()%>%EML::read_eml()
-  myeml <- xml2::read_xml(paste0("https://portal.lternet.edu/nis/metadataviewer?packageid=",
+  myeml<-xml2::read_xml(paste0("https://portal.edirepository.org/nis/metadataviewer?packageid=",
+
                                  packageid,
                                  "&contentType=application/xml")) %>% EML::read_eml()
 }
@@ -730,32 +734,60 @@ if (makeplots) {
 # Download Saddle Met data
 message(paste0("Downloading Saddle Met data, please cite: \n",
                "Morse, J. and M. Losleben. 2019. Climate data for saddle data loggers (CR23X and CR1000), 2009 - ongoing, hourly. ver 3. Environmental Data Initiative. https://doi.org/10.6073/pasta/4f416341d978376c0205c86bc88d90ba (Accessed ",Sys.Date(), ")"))
+
 saddle_met_data_fp <- download_EDI(edi_id = saddle_met_data, 
-                                   dest_dir = paste0(DirOut, 
-                                                     "/saddle_met_data"),
+                                   dest_dir = paste0(DirOut,"/saddle_met_data"),
                                    getNewData = TRUE)
 
 colclasses <- gsub("Date", "character", saddle_met_data_fp$colclasses)
-sadd_met <- read.csv(file = saddle_met_data_fp$csv,
-                     colClasses = colclasses)
+sadd_met <- read.csv(file = saddle_met_data_fp$csv)#, 
+#                     colClasses = colclasses, na.strings='NaN')
+
 
 ##############################################################################
 # Filter saddle met data and compare with Tvan Tair
 ##############################################################################
 sadd_met$date_time_start <- as.POSIXct(as.character(sadd_met$date_time_start),
                                        tz = "MST", format = "%Y-%m-%d %H:%M")
-
+#sadd_met %>% 
+#  filter(date_time_start > as.POSIXct("2019-01-01 00:00:00", tz = "MST")) %>%
+#  select(date_time_start, airtemp_avg)
 
 saddle_met_sub <- subset(sadd_met, date_time_start >= start_date)
 
-# Remove missing or questionable observations and then remove the flag columns
+# 2019 data should be mean of  airtemp_hmpX_avg, where  flags are OK
 
+saddle_met_sub1 <- saddle_met_sub %>%
+  filter(date_time_start > as.POSIXct("2019-01-01 00:00:00", tz = "MST")) %>%
+  select(date_time_start, airtemp_avg, 
+         airtemp_hmp1_avg, flag_airtemp_hmp1_avg,
+         airtemp_hmp2_avg, flag_airtemp_hmp2_avg,
+         airtemp_hmp3_avg, flag_airtemp_hmp3_avg) %>%
+  mutate(airtemp_hmp1_avg = ifelse(flag_airtemp_hmp1_avg %in% c("m", "mq", "q"), 
+                                   NA, airtemp_hmp1_avg)) %>%
+  mutate(airtemp_hmp2_avg = ifelse(flag_airtemp_hmp2_avg %in% c("m", "mq", "q"), 
+                                   NA, airtemp_hmp2_avg)) %>%
+  mutate(airtemp_hmp3_avg = ifelse(flag_airtemp_hmp3_avg %in% c("m", "mq", "q"), 
+                                   NA, airtemp_hmp3_avg)) %>%
+  group_by(date_time_start) %>%
+  summarise(airtemp_avg = mean(c(airtemp_hmp1_avg,airtemp_hmp2_avg,airtemp_hmp3_avg), na.rm=T))# %>%
+  #select(date_time_start, airtemp_avg, airtemp_hmp1_avg)
+
+plot(saddle_met_sub1)
+
+# Remove missing or questionable observations and then remove the flag columns
 saddle_met_sub2 <- saddle_met_sub %>%
+  filter(date_time_start < as.POSIXct("2019-01-01 00:00:00", tz = "MST")) %>%
+
   select(date_time_start, airtemp_avg, flag_airtemp_avg) %>%
   mutate(airtemp_avg = ifelse(flag_airtemp_avg %in% c("m", "mq", "q"), 
                               NA, airtemp_avg)) %>%
   select(date_time_start, airtemp_avg)
 
+#plot(saddle_met_sub2)
+saddle_met_sub2 = bind_rows(saddle_met_sub2, saddle_met_sub1)
+# Join airtemp_avg & airtemp_hmp_avg, usinig later for year > 2019
+plot(saddle_met_sub2)
 
 ## Interploate met data from hourly to 1/2 hourly
 sadd_met_alltime <- posix_complete %>%
@@ -871,4 +903,4 @@ if (exists("tvan_twr_west")) {
               row.names = FALSE, sep = "\t")
 }
 
-print('Finished cleaning Tvan Data, now create .nc files using flow.lter.clm.R')
+print('Finished cleaning Tvan Data, now create .nc files using prepare_forcings_for_clm.R')
