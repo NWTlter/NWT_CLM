@@ -99,23 +99,26 @@ basetower <- "East" # West
 # | DoY         | The day of year (1-365/366)      | -              | No        |
 # | Hour        | Decimal hour of the day (0.5-24) | -              | No        |
 # The location of the east tvan data filepath, use "", if tower = "West"
-east_data_fp <- "~/Desktop/Working_files/Niwot/Tvan_out_new/Reddy_proc_readyData/supp_filtering/tvan_East_2007-05-10_00-30-00_to_2020-08-11_flux_P_reddyproc_cleaned.txt"
+DirIN = paste0(DirBase,"Tvan_out_new/supp_filtering/")
+east_data_fp <- paste0(DirIN,"tvan_East_2007-05-10_00-30-00_to_2020-08-11_flux_P_reddyproc_cleaned.txt")
 # The location of the west tvan data filepath, use "", if tower = "East"
-west_data_fp <- "~/Desktop/Working_files/Niwot/Tvan_out_new/Reddy_proc_readyData/supp_filtering/tvan_West_2007-05-10_00-30-00_to_2020-08-11_flux_P_reddyproc_cleaned.txt"
+west_data_fp <- paste0(DirIN,"Tvan_out_new/supp_filtering/tvan_West_2007-05-10_00-30-00_to_2020-08-11_flux_P_reddyproc_cleaned.txt")
 
 #### Simulated Runoff Option ####
 # WARNING THIS FEATURE IS UNTESTED; CHANGE AT YOUR OWN RISK
 # The user can provide a data file from a simulated Moist Meadow run that
 # contains two columns, a timestamp column (every timestamp represents the
-# state at the *end* of the 30 minute sampling period) called "timestamp",
-# and a column containing the runoff amounts in mm/s from a Moist Meadow 
+# state at the *end* of the 30 minute sampling period) called "time",
+# and a column containing the QRUNOFF amounts in mm/s from a Moist Meadow 
 # simulation. If provided, this data will be added to the Wet meadow 
 # precipitation. If not provided, wet meadow precipitation will be 75% of 
 # observed precipitation.
 # As done in Wieder et al. 2017, JGR-B. doi:10.1002/2016JG003704.
 
 # Provide a character string specifying the location of the simulated runoff data
-simulated_runoff_fp <- NA # if NA, no simulated runoff will be used
+# if NA, no simulated runoff will be used
+simulated_runoff_fp <- paste0(DirIN,'QRUNOFF_clm50bgc_NWT_mm_newPHS_lowSLA.csv')
+
 
 ##############################################################################
 # Static workflow parameters - these are unlikely to change
@@ -173,11 +176,11 @@ getCurrentVersion <- function(edi_id){
 #function to download the EML file from EDI
 getEML <- function(packageid){
   require(magrittr)
-  myurl <- paste0("https://portal.lternet.edu/nis/metadataviewer?packageid=",
+  myurl<-paste0("https://portal.edirepository.org/nis/metadataviewer?packageid=",
                 packageid,
                 "&contentType=application/xml")
   #myeml<-xml2::download_html(myurl)%>%xml2::read_xml()%>%EML::read_eml()
-  myeml <- xml2::read_xml(paste0("https://portal.lternet.edu/nis/metadataviewer?packageid=",
+  myeml<-xml2::read_xml(paste0("https://portal.edirepository.org/nis/metadataviewer?packageid=",
                                packageid,
                                "&contentType=application/xml")) %>% EML::read_eml()
 }
@@ -613,6 +616,7 @@ if (tower == "West" | tower == "Both") {
   colnames(tvan_west) <- names(tvan_west_names)
 }
 
+
 # Get the start and end dates of the tvan data. If tower = "Both", 
 # combine East and West data into one dataframe for convenience
 if (tower == "Both") {
@@ -790,14 +794,14 @@ for (d in 1:ndays) {
 
 # Check that the total precip that fell at the saddle is the same as the total precip
 # when allocated over 30-minute time steps
-if (sum(Tvan_fine) == sum(Tvan_ppt)) {
+if (sum(Tvan_fine, na.rm=T) == sum(Tvan_ppt)) {
   writeLines(paste0("Total precip that fell at the Saddle (", sum(Tvan_ppt), 
                     ") matches the amount of total precip that has been ",
-                    "allocated to the for the tvan data (", sum(Tvan_fine), ")."))
+                    "allocated to the for the tvan data (", sum(Tvan_fine, na.rm=T), ")."))
 } else {
   warning(paste0("Total precip that fell at the Saddle (", sum(Tvan_ppt), 
                  ") does NOT match the amount of total precip that has been ",
-                 "allocated to the for the tvan data (", sum(Tvan_fine), ")!"))
+                 "allocated to the for the tvan data (", sum(Tvan_fine, na.rm=T), ")!"))
 }
 
 
@@ -873,7 +877,7 @@ amf_data_fp <- list.files(dirname(rad_data_fp[i]),
 
 writeLines("Reading in Ameriflux radiation data...")
 # Load in Radiation data:
-amf_data <- read.csv(file = amf_data_fp, 
+amf_data <- read.csv(file = amf_data_fp[2], 
                      skip = 2, 
                      header = TRUE, 
                      na.strings = "-9999",
@@ -1220,6 +1224,8 @@ if (makeplots == TRUE) {
          dpi = 150)
   
 }
+
+plots_dir
 
 ##############################################################################
 # Gap-fill West tower with East tower 
@@ -1724,14 +1730,25 @@ dataClm_veg_communities <- dataClm %>%
          PRECTmms_SB = ifelse(Tair >= 273.15, PRECTmms, PRECTmms*2)) %>%
   select(-month)
 
-# To add here:
-if(simulated_runoff_present){
-  dataClm_veg_communities %>%
-    left_join(simulated_runoff, by = c("DateTime" = "timestamp")) %>%
-    mutate(PRECTmms_WM = PRECTmms_WM + sim_runoff) %>%
-    select(-sim_runoff)
+# Add in simulated runoff from mm to wm:
+if (simulated_runoff_present) {
+  simulated_runoff <- read.csv(file = simulated_runoff_fp)
+  colnames(simulated_runoff) <- names(simulated_runoff)
 }
-  
+
+names(dataClm_veg_communities)
+# convert runoff time to DateTime
+simulated_runoff$time = as.POSIXct(simulated_runoff$time,tz='UTC')
+simulated_runoff$time = round(simulated_runoff$time, 'min')
+
+# add runoff to precipitation for wetmeadow
+if(simulated_runoff_present){
+  dataClm_veg_communities = dataClm_veg_communities %>%
+    left_join(simulated_runoff, by = c("DateTime" = "time")) %>%
+    mutate(PRECTmms_WM = PRECTmms_WM + QRUNOFF ) %>%
+    select(-QRUNOFF)
+}
+
 # Write out modified precipitation data
 twr <- ifelse(tower == "Both", "both_towers", paste0(tower, "_tower"))
 precip_mods_fp <- paste0(DirOut, "/", "tvan_forcing_data_precip_mods_", 
@@ -1960,5 +1977,6 @@ for (i in seq_along(community_list)) {
                veg_community = names(community_list[i]))
 }
 
+print(DirOut)
 print('The met (.nc) forcings for Tvan are ready to be used! Time to run CLM')
 
