@@ -33,6 +33,7 @@ if (user ==  'wwieder') {
 # to specify a case name, set equal to ""
 # This is useful if you are running many cases
 case_name <- "clm50bgc_NWT_newPHS_lowSLA"
+## !!! FF and DM results below are from clm50bgc_NWT_newPHS_lowSLA_SAND_cn32 !!!
 
 #### Input options ####
 # The input directory where simulation data is located
@@ -487,8 +488,9 @@ lapply(veg_coms_names, function(x) {
 
 # #####################################################################################
 # model data have been processed for plotting & comparison with observations
-# Move onto the `Obs_sim_comp_plots.R` script
+# Move onto the `plot_obs_sim_comparisons.R` script
 # #####################################################################################
 
 print('script complete')
-
+DirOut
+## !! FF and DM results are from clm50bgc_NWT_newPHS_lowSLA_SAND_cn32 !!

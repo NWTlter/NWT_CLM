@@ -310,6 +310,7 @@ tvan_comb_names <- read.table(file = tvan_data_fp, sep = "\t",
 tvan_comb_units <- as.character(unname(unlist(tvan_comb_names[1,])))
 
 colnames(tvan_comb) <- names(tvan_comb_names)
+plot(tvan_comb$Tsoil)
 
 # convert flux GPP (umol/m2/s to g/m2/s, as in CLM)
 tvan_comb$GPP = tvan_comb$GPP * 1e-6 * 12.01
@@ -348,7 +349,7 @@ tvan_comb_mod.diurnal_seasonal <- tvan_comb_mod %>%
   mutate(veg_com = "FF")
 
 # Get DoY fluxes
-DoY_flx_vars <- c("GPP", "LE")
+DoY_flx_vars <- c("GPP", "LE",'Tsoil')
 tvan_comb_mod.daily <- tvan_comb_mod %>% 
   select(Hour, DoY, month, Year, all_of(DoY_flx_vars)) %>%
   # remove leap days and fix DoY
@@ -361,6 +362,8 @@ tvan_comb_mod.daily <- tvan_comb_mod %>%
   select(!starts_with("LE")) %>%
   mutate(ObsSim = "Obs") %>%
   mutate(veg_com = "FF")
+
+plot(tvan_comb_mod.daily$Tsoil_dailyavg,type='l')
 
 # Get July data
 jul_30_min_tvan <- tvan_comb_mod %>% 
