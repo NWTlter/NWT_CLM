@@ -53,7 +53,7 @@ if (user ==  'wwieder') {
   DirOutBase <- paste0("~/Downloads/OBS/data") 
   DirDnld = "~/Downloads/CLM/OBS/NWT_lter_obs_downloads"
   tvan_data_fp <- "~/Downloads/CLM/datav20200816T1808/data/tvan_forcing_data_precip_mods_both_towers_2007-05-11_2020-08-11.txt"
-  tvan_data_soil <- "~/Desktop/Working_files/Niwot/Tvan_out_new/filtered_data/tvan_West_2007-05-09_19-00-00_to_2020-08-11_00-30-00_flux_P.csv"
+  tvan_data_soil <- "~/Downloads/Tvan_out_new/filtered_data/tvan_West_2007-05-09_19-00-00_to_2020-08-11_07-30-00_flux_P.csv"
 }
 
 # Should a newer version of EDI data be downloaded if one is available?
@@ -581,13 +581,13 @@ colnames(tvan_soil) <- names(tvan_soil_names)
 # Fix time, rename to match generic names of sensor network soil data, add informational
 # columns about the data's origin, and vegetation community
 tvan_soil_mod <- tvan_soil %>%
-  select(time, wc10, wc30, tc10, tc30, G) %>%
+  select(time, wc10, wc30, soil_temp, tc30, G) %>%
   mutate(timestamp = time,
          Hour = lubridate::hour(timestamp) +
            lubridate::minute(timestamp)/60,
          date = lubridate::date(timestamp)) %>%
   select(-time, -timestamp) %>%
-  rename(soiltemp_upper_avg = tc10,
+  rename(soiltemp_upper_avg = soil_temp,
          soiltemp_lower_avg = tc30,
          soilmoisture_upper_avg = wc10,
          soilmoisture_lower_avg = wc30) %>%
@@ -599,7 +599,7 @@ tvan_soil_mod <- tvan_soil %>%
 
 
 plot(tvan_soil_mod$date, tvan_soil_mod$soiltemp_upper_avg,pch='.')
-ggplot(tvan_soil_mod, aes(x = date, y = soiltemp_upper_avg)) 
+#ggplot(tvan_soil_mod, aes(x = DoY, y = soiltemp_upper_avg)) + geom_point() 
 
 
 ################################################################################
@@ -675,7 +675,7 @@ soilmoist_temp_comb_daily <- soilmoist_temp_comb %>%
 
 names(soilmoist_temp_comb_daily)
 ggplot(soilmoist_temp_comb_daily, aes(x = DoY)) +
-  geom_line(aes(y = soilmoisture_upper_avg_dailyavg, color = veg_com))
+  geom_line(aes(y = soiltemp_upper_avg_dailyavg, color = veg_com))
 
 
 ################################################################################
