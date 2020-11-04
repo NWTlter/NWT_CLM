@@ -54,7 +54,7 @@ DirSimIn = paste0(DirBase,'SIM/',sim_name)
 DirObsIn = paste0(DirBase,'OBS/data')
 
 # What vegetation community are we working with?
-vegetation_com <- "FF" # Options: "FF", "DM", "WM", "MM", "SB", NA
+vegetation_com <- "FF" # Options: "FF", "DM", "MM", "WM", "SB", NA
 
 
 
@@ -146,9 +146,8 @@ flx.clm <- flx.clm %>%
 
 flx.plot <- bind_rows(flx.clm, flx.obs) %>%
   # reorder months in order of season
-  mutate(MonGroup = factor(MonGroup, levels = c("JJA", "MAM", "DJF", "SON")))
+  mutate(MonGroup = factor(MonGroup, levels = c("DJF", "MAM", "JJA", "SON")))
   
-
 plot_forcing_var <- function(x) {
   #x <- "RNET"
   plot.df <- flx.plot %>%
@@ -219,13 +218,13 @@ ggplot(daily.obs, aes(x = DoY)) +
 
 daily.obs <- daily.obs %>% 
   select(!contains("snow_depth")) %>%
+  select(!contains("Tsoil")) %>%  #drop 'Tsoil' observations
   filter(veg_com == vegetation_com)
 names(daily.obs) <- sub("_avg_", "_", names(daily.obs))
 
 ##############################################################################
 # Plot soil moisture data
 ##############################################################################
-
 daily.plot <- bind_rows(daily.clm, daily.obs) %>%
   pivot_longer(ends_with("dailyavg"),
                names_to = "MeanMetric",
@@ -276,6 +275,7 @@ snow_depth.clm <- all.clm %>%
          sd_snwdp = sd(SNOW_DEPTH, na.rm = TRUE)) %>%
   select(-SNOW_DEPTH) %>%
   unique()
+all.clm$veg_com
 
 # Load in observations
 snwdp_obs_file <- grep("snow_depth", obs_file_list)
@@ -300,7 +300,9 @@ names(snow_depth.clm)
 
 
 snow_depth.plot <- bind_rows(snow_depth.clm, snow_depth.obs)
-
+# change order for factors of veg_com
+snow_depth.plot <- snow_depth.plot  %>% 
+  mutate(veg_com = factor(veg_com, levels = c('FF','DM','MM','WM','SB'))) 
 
 snow_depth_plot <- ggplot(snow_depth.plot %>%
          # add a very small number since geom ribbon can't handle widths of 0
@@ -318,7 +320,8 @@ snow_depth_plot <- ggplot(snow_depth.plot %>%
   scale_color_manual(values = c("black", "firebrick")) +
   scale_fill_manual(values = c("black", "firebrick")) +
   theme_bw() +
-  xlab("Day of Year") + ylab("Snow Depth (cm)") +
+  xlab("") + ylab("Snow Depth (cm)") +
+  theme(axis.text.x=element_text(angle=45,hjust=1)) +
   ggtitle(paste0("Snow depth"))
   
 
@@ -326,5 +329,5 @@ ggsave(snow_depth_plot,
        file = paste0(DirOut, "/snow_depth_plot.png"))
 
 print('---- finished plotting ----')
-
+DirOut
 
