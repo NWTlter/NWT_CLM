@@ -5,10 +5,12 @@ This repoistory contains scripts that are necessary for running and analyzing da
 
 1. [Clean L1 data](#clean-l1-data) from tvan data using `clean_tvan_data.R`*
 2. [Gap fill and generate .nc forcings](#generate-atmospheric-forcings-for-clm) with `prepare_forcings_for_clm.R` 
+   - also requires `nwt_QRUNOFF.ipynb` to supplement wet meadow precipitation
 3. [Run the model](#run-the-model) at Niwot Ridge by following the instructions in `CLM_instructions.md` 
 4. [Download and format observations](#download-and-format-observations) for comparison with the model using `prepare_obs_for_comparison.R`
 5. [Format model output](#format-model-output) for comparisons with observations using `prepare_sim_for_comparison.R` 
 6. [Create comparison plots](#comparing-model-and-obs) between simulation and observations with `plot_obs_sim_comparisons.R`
+7. [Additional comparison plots](#comparing-model-and-obs-II) between simulation and observations with `plotFluxes_TVan_CLM.ipynb` & `plot_NWTcommunities_CLM.ipynb`
 
 *This script will be rendered obsolete once the Tvan data is available on AmeriFlux 
 
@@ -323,3 +325,17 @@ In addition to the plots mentioned above, only some of the plots created will co
 Finally, there are a number of plotting aesthetics that could be improved.  
 
 [top](#nwt_clm)
+
+
+# Comparing model and obs II
+### 7a. `plotFluxes_TVan_CLM.ipynb` 
+Also makes diel, seasonal, and annual plots of simulated and observed fluxes from Tvan
+### 7b. `plot_NWTcommunities_CLM.ipynb` 
+Plots simulations from 5 saddle communities and compares to observations from Saddle grid and Saddle Sensor Network.
+
+Both scripts have the advantage of reading model output directly on /glade/scratch and are similar to scripts being developed for tower simulations at NEON sites 
+
+*Dependencies:* `utils.py` has some additional utilities that are sparingly used
+
+[top](#nwt_clm)
+
