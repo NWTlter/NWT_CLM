@@ -16,7 +16,11 @@ This repoistory contains scripts that are necessary for running and analyzing da
 
 ![**Figure 1**: NWT_CLM workflow overview](./images/Conceptual_diagram.png)
 
+<<<<<<< HEAD
 ## Quick start on installing this repo 
+=======
+## Quick start on installing this repo [most relevent for using python code]
+>>>>>>> 734064f782185edbc4ba93f57db4bbf648d0ed97
 First fork this repository:
 
 Then clone your fork:
