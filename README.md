@@ -23,7 +23,7 @@ Then you should hopefully have **ctsm-py** available as an environment in Jupyte
 Then intall the utilities:
 
 ```bash
-conda activate NWT_CLM
+conda activate ctsm_py
 pip install -e .
 ```
 
