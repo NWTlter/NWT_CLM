@@ -1,22 +1,7 @@
 # NWT_CLM
 This repoistory contains scripts that are necessary for running and analyzing data from CLM point simulations at Niwot Ridge, using Tvan Forcing data. 
 
-## Niwot scripts workflow:
-
-1. [Clean L1 data](#clean-l1-data) from tvan data using `clean_tvan_data.R`*
-2. [Gap fill and generate .nc forcings](#generate-atmospheric-forcings-for-clm) with `prepare_forcings_for_clm.R` 
-   - also requires `nwt_QRUNOFF.ipynb` to supplement wet meadow precipitation
-3. [Run the model](#run-the-model) at Niwot Ridge by following the instructions in `CLM_instructions.md` 
-4. [Download and format observations](#download-and-format-observations) for comparison with the model using `prepare_obs_for_comparison.R`
-5. [Format model output](#format-model-output) for comparisons with observations using `prepare_sim_for_comparison.R` 
-6. [Create comparison plots](#comparing-model-and-obs) between simulation and observations with `plot_obs_sim_comparisons.R`
-7. [Additional comparison plots](#comparing-model-and-obs-II) between simulation and observations with `plotFluxes_TVan_CLM.ipynb` & `plot_NWTcommunities_CLM.ipynb`
-
-*This script will be rendered obsolete once the Tvan data is available on AmeriFlux
-
-![**Figure 1**: NWT_CLM workflow overview](./images/Conceptual_diagram.png)
-
-## Quick start on installing this repo 
+## Installing
 First fork this repository:
 
 Then clone your fork:
@@ -38,9 +23,27 @@ Then you should hopefully have **ctsm-py** available as an environment in Jupyte
 Then intall the utilities:
 
 ```bash
-conda activate ctsm_py
+conda activate NWT_CLM
 pip install -e .
 ```
+
+
+## Niwot scripts workflow:
+
+1. [Clean L1 data](#clean-l1-data) from tvan data using `clean_tvan_data.R`*
+2. [Gap fill and generate .nc forcings](#generate-atmospheric-forcings-for-clm) with `prepare_forcings_for_clm.R` 
+   - also requires `nwt_QRUNOFF.ipynb` to supplement wet meadow precipitation
+3. [Run the model](#run-the-model) at Niwot Ridge by following the instructions in `CLM_instructions.md` 
+4. [Download and format observations](#download-and-format-observations) for comparison with the model using `prepare_obs_for_comparison.R`
+5. [Format model output](#format-model-output) for comparisons with observations using `prepare_sim_for_comparison.R` 
+6. [Create comparison plots](#comparing-model-and-obs) between simulation and observations with `plot_obs_sim_comparisons.R`
+7. [Additional comparison plots](#comparing-model-and-obs-II) between simulation and observations with `plotFluxes_TVan_CLM.ipynb` & `plot_NWTcommunities_CLM.ipynb`
+
+*This script will be rendered obsolete once the Tvan data is available on AmeriFlux 
+
+![**Figure 1**: NWT_CLM workflow overview](./images/Conceptual_diagram.png)
+
+
 
 ## How to run each script
 
