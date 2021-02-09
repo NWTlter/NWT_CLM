@@ -1,6 +1,33 @@
 # NWT_CLM
 This repoistory contains scripts that are necessary for running and analyzing data from CLM point simulations at Niwot Ridge, using Tvan Forcing data. 
 
+## Installing
+First fork this repository:
+
+Then clone your fork:
+
+```
+git clone https://github.com/$USER/NWT_CLM.git
+```
+
+## Creating a python environment
+Create the environment with:
+
+```bash
+cd NWT_CLM
+conda env create -f environment.yml
+```
+
+Then you should hopefully have **ctsm-py** available as an environment in JupyterHub
+
+Then intall the utilities:
+
+```bash
+conda activate NWT_CLM
+pip install -e .
+```
+
+
 ## Niwot scripts workflow:
 
 1. [Clean L1 data](#clean-l1-data) from tvan data using `clean_tvan_data.R`*
