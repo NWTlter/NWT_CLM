@@ -50,9 +50,9 @@ makeplots <- TRUE # TRUE = default
 user = 'wwieder'
 if (user ==  'wwieder') {
   DirOutBase <- paste0("~/Desktop/Working_files/Niwot/Tvan_out_new")
-  east_data_fp <- paste0(DirOutBase,"/Reddy_proc_readyData/tvan_East_2007-08-29_09-00-00_to_2020-04-09_18-00-00_flux_P_reddyproc.txt")
+  east_data_fp <- paste0(DirOutBase,"/Reddy_proc_readyData/tvan_East_2007-08-29_09-00-00_to_2021-01-05_12-30-00_flux_P_reddyproc.txt")
   # The location of the west tvan data filepath, use "", if tower = "East"
-  west_data_fp <- paste0(DirOutBase,"/Reddy_proc_readyData/tvan_West_2007-05-09_19-00-00_to_2020-08-11_00-30-00_flux_P_reddyproc.txt")
+  west_data_fp <- paste0(DirOutBase,"/Reddy_proc_readyData/tvan_West_2007-05-09_19-00-00_to_2021-01-04_00-30-00_flux_P_reddyproc.txt")
 }  else {
   DirOutBase <- "~/Downloads/Tvan_out/Reddy_proc_readyData"
   east_data_fp <- paste0(DirOutBase,"/tvan_East_2007-08-29_09-00-00_to_2020-04-09_18-00-00_flux_P_reddyproc.txt")
