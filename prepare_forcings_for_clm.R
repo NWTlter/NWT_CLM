@@ -100,10 +100,9 @@ basetower <- "East" # West
 # | Hour        | Decimal hour of the day (0.5-24) | -              | No        |
 # The location of the east tvan data filepath, use "", if tower = "West"
 DirIN = paste0(DirBase,"Tvan_out_new/supp_filtering/")
-east_data_fp <- paste0(DirIN,"tvan_East_2007-05-10_00-30-00_to_2020-08-11_flux_P_reddyproc_cleaned.txt")
+east_data_fp <- paste0(DirIN,"tvan_East_2007-05-10_00-30-00_to_2021-03-02_flux_P_reddyproc_cleaned.txt")
 # The location of the west tvan data filepath, use "", if tower = "East"
-west_data_fp <- paste0(DirIN,"tvan_West_2007-05-10_00-30-00_to_2020-08-11_flux_P_reddyproc_cleaned.txt")
-
+west_data_fp <- paste0(DirIN,"tvan_West_2007-05-10_00-30-00_to_2021-03-02_flux_P_reddyproc_cleaned.txt")
 
 #### Simulated Runoff Option ####
 # WARNING THIS FEATURE IS UNTESTED; CHANGE AT YOUR OWN RISK
