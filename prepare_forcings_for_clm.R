@@ -1857,7 +1857,7 @@ write_to_clm <- function(dataClm, veg_community = NA, verbose = FALSE) {
     #Variables to output to netCDF
     time <- ncdf4::ncdim_def("time", paste("days since",Data.mon$DateTime[1], "00:00:00"),
                              vals=as.double(time),unlim=FALSE, create_dimvar=TRUE,
-                             calendar = "gregorian")
+                             calendar = "noleap")
     LATIXY  <- ncdf4::ncvar_def("LATIXY", "degrees N", list(lat), mv,
                                 longname="latitude", prec="double")
     LONGXY  <- ncdf4::ncvar_def("LONGXY", "degrees E", list(lon), mv,
@@ -1910,7 +1910,7 @@ write_to_clm <- function(dataClm, veg_community = NA, verbose = FALSE) {
     ncdf4::ncvar_put(ncnew, GPP, Data.mon$GPP)
     ncdf4::ncvar_put(ncnew, Rnet, Data.mon$radNet)
     #add attributes
-    # ncdf4::ncatt_put(ncnew, time,"calendar", "gregorian" ,prec=NA,verbose=FALSE,definemode=FALSE )
+    # ncdf4::ncatt_put(ncnew, time,"calendar", "noleap" ,prec=NA,verbose=FALSE,definemode=FALSE )
     ncdf4::ncatt_put(ncnew, FLDS,"mode","time-dependent" ,prec=NA,verbose=FALSE,definemode=FALSE )
     ncdf4::ncatt_put(ncnew, FSDS,"mode","time-dependent" ,prec=NA,verbose=FALSE,definemode=FALSE )
     ncdf4::ncatt_put(ncnew, RH  ,"mode","time-dependent" ,prec=NA,verbose=FALSE,definemode=FALSE )
@@ -1926,7 +1926,7 @@ write_to_clm <- function(dataClm, veg_community = NA, verbose = FALSE) {
     ncdf4::ncatt_put(ncnew, Rnet,"mode","time-dependent" ,prec=NA,verbose=FALSE,definemode=FALSE )
     ncdf4::ncatt_put(ncnew, 0, "veg_community_type", veg_community_list[veg_community],prec=NA,verbose=FALSE,definemode=FALSE )
     ncdf4::ncatt_put(ncnew, 0, "created_on",date()       ,prec=NA,verbose=FALSE,definemode=FALSE )
-    ncdf4::ncatt_put(ncnew, 0, "created_by","Hannah Holland-Moritz",prec=NA,verbose=FALSE,definemode=FALSE )
+    ncdf4::ncatt_put(ncnew, 0, "created_by","Will Wieder",prec=NA,verbose=FALSE,definemode=FALSE )
     ncdf4::ncatt_put(ncnew, 0, "created_from",fileOut        ,prec=NA,verbose=FALSE,definemode=FALSE )
 
     ncdf4::ncatt_put(ncnew, 0, "created_with", "flow.lter.clm.R",prec=NA,verbose=FALSE,definemode=FALSE )
