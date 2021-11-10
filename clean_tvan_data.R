@@ -39,7 +39,7 @@ options(stringsAsFactors = F)
 ##############################################################################
 #Workflow parameters
 ##############################################################################
-#### Ploting options ####
+#### Plotting options ####
 # Should plots be made?
 makeplots <- TRUE # TRUE = default
 
@@ -47,12 +47,12 @@ makeplots <- TRUE # TRUE = default
 # The output directory for the script. It is recommended but not required that this
 # be the same directory that holds the Reddyproc-ready files produced by 
 # tvan_L1_preprocess.R
-user = 'wwieder'
-if (user ==  'wwieder') {
+user = 'katya'
+if (user ==  'katya') {
   DirOutBase <- paste0("~/Desktop/Working_files/Niwot/Tvan_out_new")
-  east_data_fp <- paste0(DirOutBase,"/Reddy_proc_readyData/tvan_East_2007-08-29_09-00-00_to_2021-03-02_12-30-00_flux_P_reddyproc.txt")
+  east_data_fp <- paste0(DirOutBase,"/Reddy_proc_readyData/tvan_East_2007-08-29_09-00-00_to_2021-11-08_05-30-00_flux_P_reddyproc.txt")
   # The location of the west tvan data filepath, use "", if tower = "East"
-  west_data_fp <- paste0(DirOutBase,"/Reddy_proc_readyData/tvan_West_2007-05-09_19-00-00_to_2021-02-17_flux_P_reddyproc.txt")
+  west_data_fp <- paste0(DirOutBase,"/Reddy_proc_readyData/tvan_West_2007-05-09_19-00-00_to_2021-11-07_17-30-00_flux_P_reddyproc.txt")
 }  else {
   DirOutBase <- "~/Downloads/Tvan_out/Reddy_proc_readyData"
   east_data_fp <- paste0(DirOutBase,"/tvan_East_2007-08-29_09-00-00_to_2020-04-09_18-00-00_flux_P_reddyproc.txt")
@@ -420,7 +420,6 @@ if (tower == "Both") {
   end_date <- max(tvan_west$timestamp, na.rm = TRUE)
 }
 
-
 # Create a timeseries dataframe with the timestamps:
 posix_complete <- as.data.frame(seq.POSIXt(start_date, end_date, by = "30 mins"))
 colnames(posix_complete) <- "timestamp"
@@ -449,15 +448,6 @@ if (tower == "West" | tower == "Both") {
            timestamp = as.POSIXct(paste0(date," 00:00:00"),
                                   format = "%Y-%m-%d %H:%M:%OS",
                                   tz = "MST") + 3600*Hour) 
-}
-
-# Convert rh to % 
-if (tower == "East" | tower == "Both") {
-  tvan_east_tms$rH <- tvan_east_tms$rH*100
-}
-
-if (tower == "West" | tower == "Both") {
-  tvan_west_tms$rH <- tvan_west_tms$rH*100
 }
 
 # Join the flux data to the posix_complete date sequence
