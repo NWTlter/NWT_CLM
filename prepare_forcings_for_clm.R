@@ -21,7 +21,7 @@
 
 #Call the R HDF5 Library
 packReq <- c("rhdf5","REddyProc", "ncdf4","devtools","magrittr","EML", "dplyr",
-             "ggplot2", "purrr", "tidyr", "lubridate","RCurl", "httr", "jsonlite")
+             "ggplot2", "purrr", "tidyr", "lubridate","RCurl", "httr", "jsonlite", "stringr")
 
 #Install and load all required packages
 lapply(packReq, function(x) {
@@ -54,12 +54,13 @@ DirDnld = paste0(DirBase,"lter_flux")
 # Should a newer version of precip data be automatically 
 # downloaded if one is available?
 getNewData = TRUE
-# Ameriflux username
-# NOTE: you cannot download Ameriflux data without a valid username
+# Ameriflux username and email
+# NOTE: you cannot download Ameriflux data without a valid username and email
 # to create an account, visit the Ameriflux website: https://ameriflux.lbl.gov/
 # Please also read their data-use policy, by downloading their data you are agreeing 
 # to follow it. The policy can be found here: https://ameriflux.lbl.gov/data/data-policy/
-amf_usr <- "wwieder" # CHANGE ME
+amf_usr <- "jayka" # CHANGE ME
+amf_email <- "katya.jay@colorado.edu" # CHANGE ME
 
 #### Tower Use Options ####
 # What tvan tower should be used?
@@ -100,9 +101,9 @@ basetower <- "East" # West
 # | Hour        | Decimal hour of the day (0.5-24) | -              | No        |
 # The location of the east tvan data filepath, use "", if tower = "West"
 DirIN = paste0(DirBase,"Tvan_out_new/supp_filtering/")
-east_data_fp <- paste0(DirIN,"tvan_East_2007-05-10_00-30-00_to_2021-03-02_flux_P_reddyproc_cleaned.txt")
+east_data_fp <- paste0(DirIN,"tvan_East_2007-05-10_00-30-00_to_2021-11-08_flux_P_reddyproc_cleaned.txt")
 # The location of the west tvan data filepath, use "", if tower = "East"
-west_data_fp <- paste0(DirIN,"tvan_West_2007-05-10_00-30-00_to_2021-03-02_flux_P_reddyproc_cleaned.txt")
+west_data_fp <- paste0(DirIN,"tvan_West_2007-05-10_00-30-00_to_2021-11-08_flux_P_reddyproc_cleaned.txt")
 
 #### Simulated Runoff Option ####
 # WARNING THIS FEATURE IS UNTESTED; CHANGE AT YOUR OWN RISK
@@ -445,7 +446,7 @@ read_USCRN_precip_data <- function(USCRN_precip_fp) {
 }
 
 # Function for downloading radiation data from Ameriflux
-download_amflx <- function(dest_dir, username, 
+download_amflx <- function(dest_dir, username, useremail,
                          site = "US-NR1", DescriptionOfDataUse,
                          DoNotOverwrite = TRUE,
                          verbose = FALSE) {
@@ -457,6 +458,8 @@ download_amflx <- function(dest_dir, username,
   #                            downloaded
   #   username  -------------- the Ameriflux username of the user - this function 
   #                            will fail without a valid username.
+  #   useremail -------------- the email address of the user, provied to Ameriflux
+  #                            upon creating an account.
   #   site  ------------------ the Ameriflux site to get the data from; defaults to 
   #                            US-NR1
   #   DescriptionOfDataUse --- the description to provide to Ameriflux for the intended
@@ -485,7 +488,7 @@ download_amflx <- function(dest_dir, username,
   writeLines("Connecting with Ameriflux endpoint...")
   
   # NOTE THIS ENDPOINT MAY CHANGE
-  ameriflux_endpoint <- "https://ameriflux-data.lbl.gov/AmeriFlux/DataDownload.svc/datafileURLs"
+  ameriflux_endpoint <- "https://amfcdn.lbl.gov/api/v1/data_download"
   
   if (missing(DescriptionOfDataUse)) {
     DescriptionOfDataUse = "These data will be used as atmospheric forcings to run a local point-simulation for the alpine tundra at the Niwot Ridge LTER site."
@@ -493,10 +496,15 @@ download_amflx <- function(dest_dir, username,
   
   # Construct Payload request for ameriflux endpoint
   Payload <- paste0('{',
-              '"username":"', username, '",',
-              '"siteList":["', site, '"],',
-              '"intendedUse": "Research - Land model/Earth system model",',
+              '"user_id":"', username, '",',
+              '"user_email":"', useremail, '",',
+              '"data_product":', '"BASE-BADM"',',', 
+              '"data_variant":', '"FULLSET"',',', 
+              '"data_policy":', '"LEGACY"',',', 
+              '"site_ids":["', site, '"],',
+              '"intended_use": "Research - Land model/Earth system model",',
               '"description": "', DescriptionOfDataUse, '"',
+              # '"is_test": ', "false",
                   '}') 
   
   # Get download information from Ameriflux endpoint
@@ -526,18 +534,22 @@ download_amflx <- function(dest_dir, username,
   r <- content(tmp) 
   
   # Check if the content is successfully received
-  if (class(r) == "raw" | length(r$dataURLsList) == 0) {
+  if (class(r) == "raw" | length(r$data_urls) == 0) {
     stop(paste0("No data was received from Ameriflux. Please check that your ",
                 "username is valid and that both it and the site name are ",
                 "spelled correctly."))
   }
   
   # Extract list of ftp urls
-  url_list <- unlist(lapply(1:length(r$dataURLsList), 
-                            function(x){r$dataURLsList[[x]]$URL}))
+  url_list <- unlist(lapply(1:length(r$data_urls), 
+                            function(x){r$data_urls[[x]]$url}))
   
-  file_list <- vector(mode = "list", 
-                      length = length(url_list))
+  if(length(url_list) == 1){
+    file_list <- url_list # url_list is actually not a list
+  } else {
+    file_list <- as.vector(mode = "list", 
+                           length = length(url_list))
+  }
 
   # Notify user of the data policy prior to download
   message(paste0("Thank you for using Ameriflux data. Please be aware of the data \n",
@@ -838,7 +850,21 @@ hlf_hr_precip <- data.frame(PRECTmms = PRECTmms, # mm/s
 ##############################################################################
 writeLines("Downloading Ameriflux radiation data...")
 rad_data_fp <- download_amflx(dest_dir = paste0(DirDnld, "/rad_data"),
-                            username = amf_usr, verbose = TRUE)
+                            username = amf_usr, useremail = amf_email, verbose = TRUE)
+
+# NOTE: the files are saved as a zipfile with the username included after the .zip
+# Need to remove the username and extra characters before unzipping
+file <- rad_data_fp
+
+if (file.exists(file)) {
+  file.rename(rad_data_fp, paste0(DirDnld, "/rad_data/AMF_US-NR1_BASE-BADM_18-5.zip"))
+} else {
+  cat("The file does not exist") 
+} # if returns TRUE then the file was renamed
+
+# Now change rad_data_fp to remove username and extra characters
+rad_data_fp <- str_remove(rad_data_fp, amf_usr)
+rad_data_fp <-  substr(rad_data_fp,1,nchar(rad_data_fp)-2)
 
 # Check if the files have already been unzipped, if not, unzip the zip file
 for (i in seq_along(rad_data_fp)) {
@@ -879,7 +905,7 @@ amf_data_fp <- list.files(dirname(rad_data_fp[i]),
 
 writeLines("Reading in Ameriflux radiation data...")
 # Load in Radiation data:
-amf_data <- read.csv(file = amf_data_fp[2], 
+amf_data <- read.csv(file = amf_data_fp[1], 
                      skip = 2, 
                      header = TRUE, 
                      na.strings = "-9999",
@@ -1228,6 +1254,7 @@ if (makeplots == TRUE) {
 }
 
 plots_dir
+# plots not working? KJ check here
 
 ##############################################################################
 # Gap-fill West tower with East tower 
