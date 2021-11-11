@@ -1254,7 +1254,6 @@ if (makeplots == TRUE) {
 }
 
 plots_dir
-# plots not working? KJ check here
 
 ##############################################################################
 # Gap-fill West tower with East tower 
