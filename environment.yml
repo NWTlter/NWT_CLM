@@ -1,6 +1,7 @@
 name: ctsm-py
 channels:
     - conda-forge
+    - bioconda
     - defaults
 dependencies:
     - python=3.7    # Python version 3.7
@@ -26,3 +27,10 @@ dependencies:
     - six           # Python 2/3 compatibility
     - tqdm          # Nice progressbar for longer computations
     - xarray=0.16.2 # N-d labeled array library
+    - r-base        # R base code
+    - r-essentials
+    - r-ncdf4
+    - r-devtools
+    - r-eml
+    - r-rcurl
+    - bioconductor-rhdf5
