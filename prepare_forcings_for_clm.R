@@ -1528,7 +1528,7 @@ EddyProc.C <- sEddyProc$new(twr, EddyDataWithPosix.F,
                             c('NEE','Rg','Tair','VPD','rH','LE','H','Ustar','P', 
                               'FLDS','U', 'PRECTmms', 'radNet', 'Tsoil'))
 #Set location information
-EddyProc.C$sSetLocationInfo(LatDeg = latSite, LongDeg = lonSite, TimeZoneHour = -6)
+EddyProc.C$sSetLocationInfo(LatDeg = latSite, LongDeg = lonSite, TimeZoneHour = -7)
 
 #+++ Fill gaps in variables with MDS gap filling algorithm (without prior ustar filtering)
 # Note, this also takes a long time to complete!
