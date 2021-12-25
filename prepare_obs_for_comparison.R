@@ -42,12 +42,19 @@ options(stringsAsFactors = F)
 #      probes from East tower do not work, so please give west tower tvan data location
 # I'm trying to make it so we don't have to keep changing this...
 
-user = 'wwieder'
+user = 'jayka'
 if (user ==  'wwieder') {
   DirOutBase <- paste0("~/Desktop/Working_files/Niwot/CLM/OBS/data")
   DirDnld = "~/Desktop/Working_files/Niwot/CLM/OBS/NWT_lter_obs_downloads"
   tvan_data_fp <- "~/Desktop/Working_files/Niwot/CLM/datav20200824T1008/data/tvan_forcing_data_precip_mods_both_towers_2007-05-11_2020-08-11.txt"
   tvan_data_soil <- "~/Desktop/Working_files/Niwot/Tvan_out_new/filtered_data/tvan_West_2007-05-09_19-00-00_to_2020-08-11_00-30-00_flux_P.csv"
+  
+} 
+if (user ==  'jayka') {
+  DirOutBase <- paste0("~/Desktop/Working_files/Niwot/CLM/OBS/data")
+  DirDnld = "~/Desktop/Working_files/Niwot/CLM/OBS/NWT_lter_obs_downloads"
+  tvan_data_fp <- "~/Desktop/Working_files/Niwot/CLM/data/data/tvan_forcing_data_precip_mods_both_towers_2007-05-11_2021-11-08.txt"
+  tvan_data_soil <- "~/Desktop/Working_files/Niwot/Tvan_out_new/AmeriFlux_readyData/tvan_West_2007-05-09_19-00-00_to_2021-11-08_00-30-00_flux_P.csv"
   
 } else { 
   DirOutBase <- paste0("~/Downloads/OBS/data") 
@@ -569,6 +576,7 @@ sad_sensnet_soil <- sad_sens_soilmoist_temp %>%
 # sad_sens_soilmoist_temp.plot$plot
 # dev.off()
 
+
 ################################################################################
 # Tvan soil moisture data
 ################################################################################
@@ -711,12 +719,12 @@ sad_snw_mod <- sad_snw %>%
   mutate(veg_class = ifelse(is.na(veg_com), "not available", veg_com)) %>%
   filter(!(veg_com == "not available")) %>%
   filter(veg_com %in% c("DM", "FF", "MM", "SB", "WM")) %>%
-  mutate(snow_depth = mean_depth,
+  mutate(snow_depth = as.numeric(mean_depth),
          date = as.Date(date, format = "%Y-%m-%d"),
          DoY = lubridate::yday(date),
          Year = lubridate::year(date)) %>%
   group_by(veg_com, DoY) %>%
-  mutate(snow_depth_dailyavg = mean(snow_depth, na.rm = TRUE),
+  mutate(snow_depth_dailyavg = mean(snow_depth, na.rm=TRUE),
          snow_depth_dailysd = sd(snow_depth, na.rm = TRUE)) %>%
   select(date, DoY, Year, point_ID, snow_depth, snow_depth_dailyavg,
          snow_depth_dailysd, veg_com) %>% 
