@@ -78,10 +78,11 @@ if(!dir.exists(DirDnld)) dir.create(DirDnld, recursive = TRUE)
 
 # the NWT LTER EDI id for observational data from the saddle
 
-saddle_catch_sensntwk <- "210" # Saddle catchment sensor network data, 2017- ongoing.
+saddle_catch_sensntwk <- "210" # Saddle catchment sensor network data, 2017 - ongoing.
 saddle_snow_depth_data <- "31" # Snow depth data for Saddle grid, 1992 - ongoing
 saddle_productivity_data <- "16" # Aboveground net primary productivity data for Saddle (contains veg community classification for grid points) grid, 1992 - ongoing
-saddle_sensntwk_veg <- "191" # Plot vegetation surveys at the Sensor Network, 2017 to ongoing
+saddle_sensntwk_veg <- "191" # Plot vegetation surveys at the Sensor Network, 2017 - ongoing
+saddle_sensntwk_phenocam <- "192" # GCC data from Saddle sensor network phenocams, 2017 - ongoing
 # Other possibly useful datasets:
 # 211: Above-ground biomass for Sensor Node Array from 2017 to 2018, yearly
 #      Has plots corresponding to sensor soil moisture node, also describes plot
@@ -289,6 +290,7 @@ message(paste0("Downloading Saddle Snow Depth data, please cite: \n",
 saddle_snwdpt_data_fp <- download_EDI(edi_id = saddle_snow_depth_data, 
                                    dest_dir = paste0(DirDnld, "/saddle_snow_depth_data"),
                                    getNewData = getNewData)
+
 # Download saddle grid productivity
 message(paste0("Downloading Saddle Productivity data, please cite: \n",
                "Walker, M., J. Smith, H. Humphries, and Niwot Ridge LTER. 2019. Aboveground net primary productivity data for Saddle grid, 1992 - ongoing. ver 4. Environmental Data Initiative. https://doi.org/10.6073/pasta/34b6a7bbe47f9398ff7f5a748f90e838 (Accessed ",Sys.Date(), ")"))
@@ -305,6 +307,13 @@ saddle_sensntwk_veg_data_fp <- download_EDI(edi_id = saddle_sensntwk_veg,
                                                       "/saddle_sensntwk_veg_data"),
                                     getNewData = getNewData)
 
+# Download saddle sensor network phenocam data
+message(paste0("Downloading Saddle Catchment phenocam data, please cite: \n",
+               "Elwood, K., J. Smith, and Niwot Ridge LTER. 2021. Time-lapse camera (phenocam) imagery of Sensor Network plots from 2017 to ongoing. ver 2. Environmental Data Initiative. https://doi:10.6073/pasta/89e8189093392325ee139eccc6b2ff85 (Accessed ",Sys.Date(), ")"))
+saddle_sensntwk_phenocam_data_fp <- download_EDI(edi_id = saddle_sensntwk_phenocam,
+                                                 dest_dir = paste0(DirDnld,
+                                                                   "/saddle_phenocam_data"),
+                                                 getNewData = getNewData)
 
 ################################################################################
 # Load Tvan flux data
@@ -516,7 +525,7 @@ sad_sensnet_soil <- sad_sens_soilmoist_temp %>%
                                                  "c", soilmoisture_5cm_sensor_letter),
          soilmoisture_5cm_avg = ifelse(is.na(soilmoisture_5cm_avg),
                                        mean_soilmoisture_c_5cm_avg, 
-                                       soilmoisture_30cm_avg),
+                                       soilmoisture_5cm_avg),
          soilmoisture_30cm_sensor_letter = ifelse(is.na(soilmoisture_30cm_avg),
                                                  "c", soilmoisture_30cm_sensor_letter),
          soilmoisture_30cm_avg = ifelse(is.na(soilmoisture_30cm_avg),
@@ -527,7 +536,7 @@ sad_sensnet_soil <- sad_sens_soilmoist_temp %>%
                                                  NA, soilmoisture_5cm_sensor_letter),
          soilmoisture_5cm_avg = ifelse(is.na(soilmoisture_5cm_avg),
                                        NA, 
-                                       soilmoisture_30cm_avg),
+                                       soilmoisture_5cm_avg),
          soilmoisture_30cm_sensor_letter = ifelse(is.na(soilmoisture_30cm_avg),
                                                  NA, soilmoisture_30cm_sensor_letter),
          soilmoisture_30cm_avg = ifelse(is.na(soilmoisture_30cm_avg),
@@ -538,7 +547,7 @@ sad_sensnet_soil <- sad_sens_soilmoist_temp %>%
          soilmoisture_5cm_sensor_letter,
          soilmoisture_30cm_sensor_letter) %>%
   # rename to be generic enough to match Tvan soil columns
-  rename(soiltemp_upper_avg = mean_soiltemp_5cm_avg, 
+  dplyr::rename(soiltemp_upper_avg = mean_soiltemp_5cm_avg, 
          soiltemp_lower_avg = mean_soiltemp_30cm_avg,
          soilmoisture_upper_avg = soilmoisture_5cm_avg, 
          soilmoisture_lower_avg = soilmoisture_30cm_avg,
@@ -699,7 +708,7 @@ sad_snw <- read.csv(saddle_snwdpt_data_fp$csv,
 
 writeLines("Reading in saddle productivity data...")
 
-sad_prod <- read.csv(saddle_prod_data_fp$csv,
+sad_prod <- read.csv(saddle_prod_data_fp$csv[[1]],
                      header = T, sep = ",", quot = '"')
 
 ################################################################################
@@ -708,7 +717,7 @@ sad_prod <- read.csv(saddle_prod_data_fp$csv,
 # Get saddle grid point vegetation community characterizations
 sad_grid_veg_com <- sad_prod %>%
   select(grid_pt, veg_class) %>%
-  rename(veg_com = veg_class) %>%
+  dplyr::rename(veg_com = veg_class) %>%
   unique()
 
 # Merge saddle snow depth measurements with the saddle vegetation characterizations
@@ -736,7 +745,7 @@ sad_snw_daily <- sad_snw_mod %>%
   select(DoY, snow_depth_dailyavg, snow_depth_dailysd,
          veg_com, data_information) %>%
   unique() %>%
-  rename(snow_depth_data_information = data_information)
+  dplyr::rename(snow_depth_data_information = data_information)
 
 # Average the snow depth across plots of the same vegetation community, at 
 # each date
@@ -790,7 +799,7 @@ sad_snw_forc_yrs <- sad_snw_mod %>%
 # Yearly Saddle grid Productivity data (gC/m^2)
 # CLM needs it in gC/m^2/s
 sad_prod_mod <- sad_prod %>% 
-  rename(veg_com = veg_class) %>%
+  dplyr::rename(veg_com = veg_class) %>%
   select(year, grid_pt, veg_com, NPP, subsample) %>%
   #mutate(row = row_number()) %>%
   # Separate by subsamples
@@ -826,7 +835,33 @@ sad_prod_mod_ann <- sad_prod_mod %>%
 #   filter(veg_class == "DM")
 
 
+################################################################################
+# Load Saddle Catchment Phenocam Data
+################################################################################
+writeLines("Reading in sensor network phenocam data...")
 
+phenocam_data_raw <- vector(length = length(saddle_sensntwk_phenocam_data_fp$csv),
+                                            mode = "list")
+phenocam_data_raw <- lapply(seq_along(saddle_sensntwk_phenocam_data_fp$csv), 
+                                            function(x) {
+                                              writeLines(paste0("Reading in ", 
+                                                                basename(saddle_sensntwk_phenocam_data_fp$csv[[x]])))
+                                              # replace date with chararacter
+                                              tmp_colclasses <- gsub("Date", "character", saddle_sensntwk_phenocam_data_fp$colclasses[[x]])
+                                              read.csv(saddle_sensntwk_phenocam_data_fp$csv[[x]],
+                                                       header = T, sep = ",", quot = '"', 
+                                                       as.is = TRUE, na.strings = c("NA", "NaN", ""),
+                                                       colClasses = tmp_colclasses)
+                                            })
+names(phenocam_data_raw) <- basename(unlist(saddle_sensntwk_phenocam_data_fp$csv))
+
+phenocam_data_filtered <- phenocam_data_raw[[2]]
+
+# Joining veg classifications with phenocam data
+phenocam_data_filtered <- left_join(phenocam_data_filtered, sensor_plot_com, by = c("node" = "plot")) %>%
+  # Remove sub alpine, and non-characterized vegetation communities
+  filter(!is.na(veg_com)) %>%
+  filter(veg_com != "SA")
 
 ################################################################################
 # Reformat data
@@ -838,7 +873,7 @@ sad_prod_mod_ann <- sad_prod_mod %>%
 # Half-hourly fluxes from Tvan; Comparable to the fell-field
 # Variables: FSH (tvan), RN (tvan), LE (tvan), GPP (tvan)
 tvan_comb_mod.diurnal_seasonal <- tvan_comb_mod.diurnal_seasonal %>%
-  rename(RNET_houravg = radNet_houravg,
+  dplyr::rename(RNET_houravg = radNet_houravg,
          RNET_hoursd = radNet_hoursd,
          FSH_houravg = H_houravg,
          FSH_hoursd = H_hoursd,
@@ -848,7 +883,7 @@ tvan_comb_mod.diurnal_seasonal <- tvan_comb_mod.diurnal_seasonal %>%
 
 # July flux summary
 jul_30_min_tvan <- jul_30_min_tvan %>%
-  rename(RNET_houravg = radNet_houravg,
+  dplyr::rename(RNET_houravg = radNet_houravg,
          RNET_hoursd = radNet_hoursd,
          FSH_houravg = H_houravg,
          FSH_hoursd = H_hoursd,
@@ -860,17 +895,13 @@ jul_30_min_tvan <- jul_30_min_tvan %>%
 # Variables: GPP (tvan), SoilTemp (tvan/sensor network),
 # Soil Moisture (tvan/sensor network), snow depth (saddle grid), 
 daily_soilmoisttemp_gpp_snwdp <- soilmoist_temp_comb_daily %>% 
-  rename(soilmoisture_data_info = data_information) %>%
+  dplyr::rename(soilmoisture_data_info = data_information) %>%
   # join with tvan GPP data
   left_join(tvan_comb_mod.daily, by = c("DoY", "veg_com")) %>%
   # join with snow depth data
   left_join(sad_snw_daily, by = c("DoY", "veg_com")) %>%
   mutate(ObsSim = "Obs")
   
-
-
-
-
 
 
 ################################################################################
@@ -928,6 +959,12 @@ write.table(sad_snw_forc_yrs,
 write.table(sad_prod_mod,
             file = paste0(DirOutBase, 
                           "/saddle_grid_productivity_data.txt"),
+            row.names = FALSE, sep = "\t")
+
+# Phenocam data
+write.table(phenocam_data_filtered,
+            file = paste0(DirOutBase, 
+                          "/sensor_network_phenocam_data.txt"),
             row.names = FALSE, sep = "\t")
 
 print('--- finished  with script ---')
